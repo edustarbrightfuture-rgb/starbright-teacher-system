@@ -921,6 +921,31 @@ html.dark-mode .teacher-delete-btn{
   }
 }
 
+
+/* ===== V39 Course Delete Cloud Fix ===== */
+.course-actions .teacher-delete-btn,
+.course-actions .btn.danger{
+  transition:.18s ease;
+}
+
+
+/* ===== V40 Makeup Multiple Students ===== */
+.multi-student-input-wrap{display:grid;gap:9px}
+.multi-student-entry{display:grid;grid-template-columns:1fr auto;gap:8px}
+.multi-student-tags{display:flex;flex-wrap:wrap;gap:7px;min-height:34px}
+.multi-student-tag{
+  display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border-radius:999px;
+  background:#f1e8fb;color:#5e348e;border:1px solid #decaf2;font-size:11px;font-weight:800
+}
+.multi-student-tag button{border:0;background:transparent;color:inherit;cursor:pointer;font-weight:900;padding:0}
+html.dark-mode .multi-student-tag{
+  background:rgba(121,65,146,.26);color:#ffd36f;border-color:rgba(255,211,111,.18)
+}
+@media(max-width:760px){
+  .multi-student-entry{grid-template-columns:1fr}
+  .multi-student-entry .btn{width:100%;min-height:42px}
+}
+
 </style>
 <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
 </head>
@@ -969,7 +994,7 @@ html.dark-mode .teacher-delete-btn{
     <header class="topbar">
       <div class="topbar-left"><button class="mobile-menu" id="menuBtn">☰</button><div><h1 id="topTitle">Dashboard</h1><small>WELCOME BACK DEAR TEACHERS</small></div></div>
       <div class="topbar-center"><div class="today" id="todayText"></div></div>
-      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V37 Cloud-First"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
+      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V42 Cloud-First"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
     </header>
     <div class="content">
       <section class="page active" id="dashboard">
@@ -1089,7 +1114,16 @@ html.dark-mode .teacher-delete-btn{
 
 <div class="modal" id="makeupModal"><div class="modal-card"><h3 id="makeupModalTitle">Add Makeup Class</h3><div class="form-grid">
   <div class="field"><label>Date</label><input type="date" id="mDate"></div><div class="field"><label>Time</label><input type="time" id="mTime"></div>
-  <div class="field"><label>Teacher</label><select id="mTeacher"></select></div><div class="field"><label>Student</label><select id="mStudent"></select></div>
+  <div class="field"><label>Teacher</label><select id="mTeacher"></select></div><div class="field full">
+  <label>Students <span class="muted">(Multiple)</span></label>
+  <div class="multi-student-input-wrap">
+    <div class="multi-student-entry">
+      <input id="mStudentInput" type="text" placeholder="Type student name and press Enter">
+      <button type="button" class="btn soft small" id="mStudentAddBtn">+ Add</button>
+    </div>
+    <div class="multi-student-tags" id="mStudentTags"></div>
+  </div>
+</div>
   <div class="field"><label>Subject / Class</label><input id="mSubject" placeholder="e.g. BM Replacement"></div><div class="field"><label>Status</label><select id="mStatus"><option value="scheduled">Scheduled</option><option value="done">Done</option><option value="cancelled">Cancelled</option></select></div>
   <div class="field full"><label>Note</label><textarea id="mNote" rows="3"></textarea></div>
 </div><div class="actions"><button class="btn danger" id="deleteMakeupBtn" style="display:none;margin-right:auto">Delete</button><button class="btn soft" onclick="closeModal('makeupModal')">Cancel</button><button class="btn primary" id="makeupSaveBtn">Save Makeup</button></div></div></div>
@@ -1434,10 +1468,11 @@ function makeupPayload(item){
     time:item.time||'',
     teacherId:item.teacherId||'',
     studentId:item.studentId||'',
+    studentNames:Array.isArray(item.studentNames)?item.studentNames:[],
     subject:item.subject||'',
     status:item.status||'scheduled',
     note:item.note||'',
-    cloudVersion:'v32'
+    cloudVersion:'v40'
   };
 }
 
@@ -1482,6 +1517,7 @@ function remoteMakeupRow(r){
     time:r.time||'',
     teacherId:r.teacherId||'',
     studentId:r.studentId||'',
+    studentNames:Array.isArray(r.studentNames)?r.studentNames:[],
     subject:r.subject||'',
     status:r.status||'scheduled',
     note:r.note||''
@@ -1757,6 +1793,10 @@ document.addEventListener('visibilitychange',()=>{
   if(document.visibilityState==='visible')v37RefreshOnReturn();
 });
 
+document.getElementById('mStudentAddBtn')?.addEventListener('click',addMakeupStudent);
+document.getElementById('mStudentInput')?.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){e.preventDefault();addMakeupStudent();}
+});
 document.getElementById('themeToggle').onclick=()=>{
   applyTheme(document.documentElement.classList.contains('dark-mode')?'light':'dark');
 };
@@ -1850,7 +1890,16 @@ function populateSelects(){
  const selects=['sTeacher','mTeacher','cTeacher'].map(id=>document.getElementById(id)).filter(Boolean);
  selects.forEach(el=>{const v=el.value;if(teacher&&teacherId){const t=db.teachers.find(x=>x.id===teacherId);el.innerHTML=t?`<option value="${t.id}">${esc(t.name)}</option>`:'<option value="">Teacher</option>';el.value=t?.id||''}else{el.innerHTML=normalTeacherOpts;if([...el.options].some(o=>o.value===v))el.value=v}});
  const visibleStudents=teacher&&teacherId?db.students.filter(s=>s.teacherId===teacherId):db.students;
- const studentOpts='<option value="">Select student</option>'+visibleStudents.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');const ms=document.getElementById('mStudent'),sv=ms.value;ms.innerHTML=studentOpts;if([...ms.options].some(o=>o.value===sv))ms.value=sv;
+
+ // V42: Makeup Student is now a manual multi-student input, so mStudent select
+ // no longer exists. Keep this null-safe for any legacy page using a select.
+ const ms=document.getElementById('mStudent');
+ if(ms){
+   const studentOpts='<option value="">Select student</option>'+visibleStudents.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('');
+   const sv=ms.value;
+   ms.innerHTML=studentOpts;
+   if([...ms.options].some(o=>o.value===sv))ms.value=sv;
+ }
 }
 function renderPeople(){
  const session=currentSession();const teacher=session?.role==='teacher';const teacherId=session?.teacherId;
@@ -1867,21 +1916,58 @@ function toggleCourse(id){document.getElementById('course-'+id)?.classList.toggl
 function openCourseModal(id=null){if(isTeacher())return toast('Admin access only');editingCourse=id;populateSelects();const c=db.courses.find(x=>x.id===id)||{};courseModalTitle.textContent=id?'Edit Course':'Add Course';cName.value=c.name||'';cTeacher.value=c.teacherId||'';setSelectedCourseWeekdays(c.weekdays||[]);courseModal.classList.add('show')}
 courseSaveBtn.onclick=()=>{if(isTeacher())return toast('Admin access only');const name=cName.value.trim(),teacherId=cTeacher.value,weekdays=getSelectedCourseWeekdays();if(!name||!teacherId)return toast('Please enter course and teacher');if(!weekdays.length)return toast('Please select at least one weekday');if(editingCourse){Object.assign(db.courses.find(c=>c.id===editingCourse),{name,teacherId,weekdays})}else db.courses.push({id:uid('c'),name,teacherId,weekdays,studentIds:[]});closeModal('courseModal');save();toast('Course saved')};
 
-function deleteCourse(courseId){
+async function deleteCourse(courseId){
   if(isTeacher()) return toast('Admin access only');
+
   const c=db.courses.find(x=>x.id===courseId);
-  if(!c) return;
+  if(!c) return toast('Course not found');
+
   const teacher=teacherName(c.teacherId);
   const studentCount=(c.studentIds||[]).length;
-  const msg=`Delete "${c.name}"?\n\nTeacher: ${teacher}\nStudents in course: ${studentCount}\n\nThe students will NOT be deleted from the system. Only this course will be removed.`;
+  const msg=`Delete "${c.name}"?\n\nTeacher: ${teacher}\nStudents in course: ${studentCount}\n\nStudents will NOT be deleted. Only this course will be removed.`;
+
   if(!confirm(msg)) return;
-  db.courses=db.courses.filter(x=>x.id!==courseId);
-  // Remove attendance records that belong to this exact course to avoid orphan course records
-  if(Array.isArray(db.attendance)){
-    db.attendance=db.attendance.filter(a=>!(a.teacherId===c.teacherId && a.subject===c.name));
+
+  try{
+    setCloudStatus('syncing','Deleting');
+
+    // Delete the Course directly from Back4App first.
+    await restDeleteOperational(B4A_CLASSES.courses,courseId);
+
+    // Remove related Attendance records for the same teacher + subject,
+    // matching the previous system behavior.
+    try{
+      const attendanceRows=await restQueryClass(B4A_CLASSES.attendance,{
+        teacherId:c.teacherId,
+        subject:c.name
+      });
+      for(const row of attendanceRows){
+        if(row.objectId){
+          await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.attendance)}/${row.objectId}`,{
+            method:'DELETE'
+          });
+        }
+      }
+    }catch(attErr){
+      console.warn('Related attendance cleanup warning:',attErr);
+    }
+
+    // Only change UI after cloud deletion succeeds.
+    db.courses=db.courses.filter(x=>x.id!==courseId);
+    db.attendance=(db.attendance||[]).filter(a=>!(a.teacherId===c.teacherId && a.subject===c.name));
+
+    renderAll();
+    setCloudStatus('online','Online','Course deleted from Back4App');
+    toast('Course deleted successfully');
+
+  }catch(err){
+    console.error('Delete course failed:',err);
+    setCloudStatus('online','Online',String(err?.message||err));
+    toast(`Delete course failed: ${err?.message||err}`);
+
+    // Reload cloud so UI always matches Back4App.
+    try{await loadCoreFromCloud()}catch(_){}
   }
-  save();
-  toast('Course deleted');
 }
 
 function openCourseStudentModal(courseId){if(isTeacher())return toast('Admin access only');activeCourseId=courseId;const c=db.courses.find(x=>x.id===courseId);courseStudentTitle.textContent=`Add Student · ${c?.name||'Course'}`;csName.value='';csYear.value='';csPhone.value='';courseStudentModal.classList.add('show')}
@@ -2003,15 +2089,77 @@ attendanceModalSave.onclick=async()=>{
     toast(formatCloudSaveError('Attendance',err));
   }
 };
-function openMakeupModal(id=null,date=null){const session=currentSession();editingMakeup=id;populateSelects();const m=db.makeups.find(x=>x.id===id)||{};if(session?.role==='teacher'&&id&&m.teacherId!==session.teacherId)return toast('You can only open your own makeup classes');makeupModalTitle.textContent=id?'Edit Makeup Class':'Add Makeup Class';mDate.value=m.date||date||today;mTime.value=m.time||'';mTeacher.value=session?.role==='teacher'?session.teacherId:(m.teacherId||'');mStudent.value=m.studentId||'';mSubject.value=m.subject||'';mStatus.value=m.status||'scheduled';mNote.value=m.note||'';deleteMakeupBtn.style.display=id?'inline-block':'none';makeupModal.classList.add('show')}
+
+let makeupStudentNames=[];
+
+function renderMakeupStudentTags(){
+  const box=document.getElementById('mStudentTags');
+  if(!box)return;
+  box.innerHTML=makeupStudentNames.length
+    ? makeupStudentNames.map((name,i)=>`<span class="multi-student-tag">${esc(name)}<button type="button" onclick="removeMakeupStudent(${i})">×</button></span>`).join('')
+    : '<span class="muted" style="font-size:10px">No students added yet.</span>';
+}
+
+function addMakeupStudent(){
+  const input=document.getElementById('mStudentInput');
+  const name=(input?.value||'').trim();
+  if(!name)return;
+  if(makeupStudentNames.some(n=>n.toLowerCase()===name.toLowerCase()))return toast('Student already added');
+  makeupStudentNames.push(name);
+  input.value='';
+  renderMakeupStudentTags();
+}
+
+function removeMakeupStudent(index){
+  makeupStudentNames.splice(index,1);
+  renderMakeupStudentTags();
+}
+
+function openMakeupModal(id=null,date=null){
+  const session=currentSession();
+  editingMakeup=id;
+  populateSelects();
+  const m=db.makeups.find(x=>x.id===id)||{};
+  if(session?.role==='teacher'&&id&&m.teacherId!==session.teacherId)return toast('You can only open your own makeup classes');
+
+  makeupModalTitle.textContent=id?'Edit Makeup Class':'Add Makeup Class';
+  mDate.value=m.date||date||today;
+  mTime.value=m.time||'';
+  mTeacher.value=session?.role==='teacher'?session.teacherId:(m.teacherId||'');
+  mSubject.value=m.subject||'';
+  mStatus.value=m.status||'scheduled';
+  mNote.value=m.note||'';
+
+  makeupStudentNames=Array.isArray(m.studentNames)?[...m.studentNames]:[];
+  if(!makeupStudentNames.length && m.studentId){
+    const st=db.students.find(s=>s.id===m.studentId);
+    if(st)makeupStudentNames=[st.name];
+  }
+
+  mStudentInput.value='';
+  renderMakeupStudentTags();
+  deleteMakeupBtn.style.display=id?'inline-block':'none';
+  makeupModal.classList.add('show');
+}
+
 makeupSaveBtn.onclick=async()=>{
   const session=currentSession();
   const teacherId=session?.role==='teacher'?session.teacherId:mTeacher.value;
-  if(!mDate.value||!teacherId||!mStudent.value)return toast('Please select date, teacher and student');
-  const student=db.students.find(s=>s.id===mStudent.value);
-  if(session?.role==='teacher'&&student?.teacherId!==session.teacherId)return toast('Please select your own student');
 
-  const data={date:mDate.value,time:mTime.value,teacherId,studentId:mStudent.value,subject:mSubject.value.trim(),status:mStatus.value,note:mNote.value.trim()};
+  if(!mDate.value||!teacherId)return toast('Please select date and teacher');
+  if(!makeupStudentNames.length)return toast('Please add at least one student');
+
+  const data={
+    date:mDate.value,
+    time:mTime.value,
+    teacherId,
+    studentId:'',
+    studentNames:[...makeupStudentNames],
+    subject:mSubject.value.trim(),
+    status:mStatus.value,
+    note:mNote.value.trim()
+  };
+
   let item;
   if(editingMakeup){
     const old=db.makeups.find(m=>m.id===editingMakeup);
@@ -2023,21 +2171,57 @@ makeupSaveBtn.onclick=async()=>{
   try{
     setCloudStatus('syncing','Saving');
     await restUpsertOperational(B4A_CLASSES.makeups,item,makeupPayload);
+
     if(editingMakeup)Object.assign(db.makeups.find(m=>m.id===editingMakeup),data);
     else db.makeups.push(item);
-    
+
     closeModal('makeupModal');
     renderAll();
     setCloudStatus('online','Online','Makeup saved to Back4App');
-    toast('Makeup saved to Back4App');
+    toast('Makeup saved successfully');
   }catch(err){
     console.error('Makeup direct cloud save failed:',err);
     setCloudStatus('online','Online',String(err?.message||err));
     toast(formatCloudSaveError('Makeup',err));
   }
 };
-deleteMakeupBtn.onclick=()=>{if(!editingMakeup)return;const session=currentSession(),item=db.makeups.find(m=>m.id===editingMakeup);if(session?.role==='teacher'&&item?.teacherId!==session.teacherId)return toast('You can only delete your own makeup classes');if(confirm('Delete this makeup class?')){db.makeups=db.makeups.filter(m=>m.id!==editingMakeup);closeModal('makeupModal');save();syncCoreNow('push');toast('Makeup deleted from cloud')}};
-function renderCalendar(){const session=currentSession(),y=calCursor.getFullYear(),m=calCursor.getMonth();monthTitle.textContent=calCursor.toLocaleString('en-US',{month:'long',year:'numeric'});const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());let html='';for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d),out=d.getMonth()!==m;const events=db.makeups.filter(x=>x.date===ds&&(!(session?.role==='teacher'&&session.teacherId)||x.teacherId===session.teacherId));html+=`<div class="day ${out?'out':''}" ondblclick="openMakeupModal(null,'${ds}')"><div class="num">${d.getDate()}</div>${events.map(e=>`<div class="makeup-event ${e.status==='done'?'done':''}" onclick="event.stopPropagation();openMakeupModal('${e.id}')"><strong>${esc(teacherName(e.teacherId))}</strong><span>${esc(e.time||'')} · ${esc(studentName(e.studentId))}</span><br><span>${esc(e.subject||'Makeup')}</span></div>`).join('')}</div>`}calendarGrid.innerHTML=html}
+
+deleteMakeupBtn.onclick=async()=>{
+  if(!editingMakeup)return;
+
+  const session=currentSession();
+  const item=db.makeups.find(m=>m.id===editingMakeup);
+
+  if(session?.role==='teacher'&&item?.teacherId!==session.teacherId){
+    return toast('You can only delete your own makeup classes');
+  }
+
+  if(!confirm('Delete this makeup class?'))return;
+
+  const deleteId=editingMakeup;
+
+  try{
+    setCloudStatus('syncing','Deleting');
+
+    // Delete the matching Back4App object first.
+    // restDeleteOperational finds the cloud row by localId and deletes its objectId.
+    await restDeleteOperational(B4A_CLASSES.makeups,deleteId);
+
+    // Only remove it from the screen/local state after cloud deletion succeeds.
+    db.makeups=db.makeups.filter(m=>m.id!==deleteId);
+    editingMakeup=null;
+    closeModal('makeupModal');
+    renderAll();
+
+    setCloudStatus('online','Online','Makeup deleted from Back4App');
+    toast('Makeup deleted successfully');
+  }catch(err){
+    console.error('Makeup cloud delete failed:',err);
+    setCloudStatus('online','Online',String(err?.message||err));
+    toast('Delete failed: '+String(err?.message||err));
+  }
+};
+function renderCalendar(){const session=currentSession(),y=calCursor.getFullYear(),m=calCursor.getMonth();monthTitle.textContent=calCursor.toLocaleString('en-US',{month:'long',year:'numeric'});const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());let html='';for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d),out=d.getMonth()!==m;const events=db.makeups.filter(x=>x.date===ds&&(!(session?.role==='teacher'&&session.teacherId)||x.teacherId===session.teacherId));html+=`<div class="day ${out?'out':''}" ondblclick="openMakeupModal(null,'${ds}')"><div class="num">${d.getDate()}</div>${events.map(e=>`<div class="makeup-event ${e.status==='done'?'done':''}" onclick="event.stopPropagation();openMakeupModal('${e.id}')"><strong>${esc(teacherName(e.teacherId))}</strong><span>${esc(e.time||'')} · ${esc((e.studentNames&&e.studentNames.length)?e.studentNames.join(', '):studentName(e.studentId))}</span><br><span>${esc(e.subject||'Makeup')}</span></div>`).join('')}</div>`}calendarGrid.innerHTML=html}
 prevMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};nextMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};goToday.onclick=()=>{calCursor=new Date();renderCalendar()};
 function renderDashboard(){const session=currentSession(),teacher=session?.role==='teacher',tid=session?.teacherId;const visibleTeachers=teacher?db.teachers.filter(t=>t.id===tid):db.teachers,visibleStudents=teacher?db.students.filter(s=>s.teacherId===tid):db.students,visibleAttendance=teacher?db.attendance.filter(a=>a.teacherId===tid):db.attendance,visibleMakeups=teacher?db.makeups.filter(m=>m.teacherId===tid):db.makeups;statTeachers.textContent=visibleTeachers.length;statStudents.textContent=uniqueAssignedStudentCount(teacher?tid:null);const a=visibleAttendance.filter(x=>x.date===today);let p=0;a.forEach(x=>Object.values(x.records||{}).forEach(v=>{if(v==='present')p++}));statPresent.textContent=p;const upcoming=visibleMakeups.filter(m=>m.date>=today&&m.status!=='cancelled').sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));statMakeups.textContent=upcoming.length;dashAttendance.innerHTML=a.length?a.map(x=>`<div class="quick-row"><div><b>${esc(teacherName(x.teacherId))}</b><div class="muted">${esc(x.className||'Attendance saved')}</div></div><span class="pill">${Object.keys(x.records||{}).length} students</span></div>`).join(''):`<div class="empty">No attendance saved for today.</div>`;dashMakeups.innerHTML=upcoming.length?upcoming.slice(0,5).map(m=>`<div class="quick-row"><div><b>${esc(studentName(m.studentId))}</b><div class="muted">${esc(m.date)} ${esc(m.time||'')} · ${esc(teacherName(m.teacherId))}</div></div><span class="pill">${esc(m.subject||'Makeup')}</span></div>`).join(''):`<div class="empty">No upcoming makeup classes.</div>`}
 function renderAll(){populateSelects();renderPeople();renderAttendance();renderCalendar();renderDashboard();applyRoleUI()}
