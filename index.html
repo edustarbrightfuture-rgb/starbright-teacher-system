@@ -1216,6 +1216,42 @@ html.dark-mode .multi-student-tag{
   }
 }
 
+
+/* ===== V46 Bulk Add Course Students ===== */
+#courseStudentModal textarea{
+  width:100%;
+  min-height:190px;
+  resize:vertical;
+}
+.bulk-add-note{
+  padding:11px 13px;
+  border:1px dashed var(--line);
+  border-radius:12px;
+  color:var(--muted);
+  font-size:11px;
+  line-height:1.6;
+}
+html.dark-mode .bulk-add-note{
+  background:rgba(255,211,111,.035);
+}
+
+
+/* ===== V48 Course Time ===== */
+.course-time-display{margin-top:6px;font-size:11px;font-weight:800;color:var(--purple)}
+html.dark-mode .course-time-display{color:#ffd36f}
+
+
+/* ===== V49 Attendance Course Time Display ===== */
+.attendance-course-time{
+  margin:5px 0 2px;
+  font-size:10px;
+  font-weight:800;
+  color:var(--purple);
+}
+html.dark-mode .attendance-course-time{
+  color:#ffd36f;
+}
+
 </style>
 <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
 </head>
@@ -1264,7 +1300,7 @@ html.dark-mode .multi-student-tag{
     <header class="topbar">
       <div class="topbar-left"><button class="mobile-menu" id="menuBtn">☰</button><div><h1 id="topTitle">Dashboard</h1><small>WELCOME BACK DEAR TEACHERS</small></div></div>
       <div class="topbar-center"><div class="today" id="todayText"></div></div>
-      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V44 Mobile People Fixed"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
+      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V49 Attendance Time"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
     </header>
     <div class="content">
       <section class="page active" id="dashboard">
@@ -1363,6 +1399,8 @@ html.dark-mode .multi-student-tag{
 <div class="modal" id="courseModal"><div class="modal-card"><h3 id="courseModalTitle">Add Course</h3><div class="form-grid">
   <div class="field"><label>Course / Subject</label><input id="cName" placeholder="e.g. Year 4 BM"></div>
   <div class="field"><label>Teacher</label><select id="cTeacher"></select></div>
+  <div class="field"><label>Start Time</label><input id="cStartTime" type="time"></div>
+  <div class="field"><label>End Time</label><input id="cEndTime" type="time"></div>
   <div class="field full">
     <label>Weekday <span class="muted">(Multiple select)</span></label>
     <div class="weekday-multi" id="courseWeekdays">
@@ -1376,10 +1414,15 @@ html.dark-mode .multi-student-tag{
     </div>
   </div>
 </div><div class="actions"><button class="btn soft" onclick="closeModal('courseModal')">Cancel</button><button class="btn primary" id="courseSaveBtn">Save Course</button></div></div></div>
-<div class="modal" id="courseStudentModal"><div class="modal-card"><h3 id="courseStudentTitle">Add Student to Course</h3><div class="form-grid">
-  <div class="field"><label>Student Name</label><input id="csName"></div><div class="field"><label>Year / Grade</label><input id="csYear" placeholder="Year 3"></div>
-  <div class="field full"><label>Parent Phone</label><input id="csPhone"></div>
-</div><div class="actions"><button class="btn soft" onclick="closeModal('courseStudentModal')">Cancel</button><button class="btn primary" id="courseStudentSaveBtn">Add Student</button></div></div></div>
+<div class="modal" id="courseStudentModal"><div class="modal-card"><h3 id="courseStudentTitle">Bulk Add Students to Course</h3><div class="form-grid">
+  <div class="field full">
+    <label>Student Names <span class="muted">(one name per line)</span></label>
+    <textarea id="csNames" rows="9" placeholder="Example:&#10;LOOI ZI TONG&#10;CHEW XIAN JUN&#10;TEE EQIN&#10;ANG JUN SHUEN"></textarea>
+  </div>
+  <div class="field"><label>Year / Grade</label><input id="csYear" placeholder="YEAR 4"></div>
+  <div class="field"><label>Parent Phone <span class="muted">(optional)</span></label><input id="csPhone"></div>
+  <div class="field full"><div class="bulk-add-note">一次贴上全部学生名字，一行一个。系统会批量保存到 Back4App，并一次加入这个 Course。</div></div>
+</div><div class="actions"><button class="btn soft" onclick="closeModal('courseStudentModal')">Cancel</button><button class="btn primary" id="courseStudentSaveBtn">Save All Students</button></div></div></div>
 <div class="modal" id="attendanceModal"><div class="modal-card" style="max-width:760px"><div class="section-title" style="margin-bottom:14px"><div><h3 id="attendanceModalTitle">Take Attendance</h3><div class="muted" id="attendanceModalMeta"></div></div></div><div id="attendanceModalStudents"></div><div class="actions"><button class="btn soft" onclick="closeModal('attendanceModal')">Cancel</button><button class="btn primary" id="attendanceModalSave">Save Attendance</button></div></div></div>
 
 <div class="modal" id="makeupModal"><div class="modal-card"><h3 id="makeupModalTitle">Add Makeup Class</h3><div class="form-grid">
@@ -1491,18 +1534,19 @@ function cloudAttrs(type,item){
   if(type==='courses')return {
     localId:item.id,name:item.name||'',teacherId:item.teacherId||'',
     weekdays:Array.isArray(item.weekdays)?item.weekdays:[],
-    studentIds:Array.isArray(item.studentIds)?item.studentIds:[]
+    studentIds:Array.isArray(item.studentIds)?item.studentIds:[],
+    startTime:item.startTime||'',endTime:item.endTime||''
   };
   if(type==='students')return {
     localId:item.id,name:item.name||'',year:item.year||'',teacherId:item.teacherId||'',phone:item.phone||''
   };
   if(type==='attendance')return {
-    localId:item.id,date:item.date||'',teacherId:item.teacherId||'',
+    localId:item.id,date:normalizeDateOnly(item.date),teacherId:item.teacherId||'',
     subject:item.subject||item.className||'',className:item.className||item.subject||'',
     records:item.records&&typeof item.records==='object'?item.records:{}
   };
   if(type==='makeups')return {
-    localId:item.id,date:item.date||'',time:item.time||'',teacherId:item.teacherId||'',
+    localId:item.id,date:normalizeDateOnly(item.date),time:item.time||'',teacherId:item.teacherId||'',
     studentId:item.studentId||'',subject:item.subject||'',status:item.status||'scheduled',
     note:item.note||''
   };
@@ -1518,7 +1562,8 @@ function remoteToLocal(type,obj){
   if(type==='courses')return {
     id:a.localId||obj.id,name:a.name||'',teacherId:a.teacherId||'',
     weekdays:Array.isArray(a.weekdays)?a.weekdays:[],
-    studentIds:Array.isArray(a.studentIds)?a.studentIds:[]
+    studentIds:Array.isArray(a.studentIds)?a.studentIds:[],
+    startTime:a.startTime||'',endTime:a.endTime||''
   };
   if(type==='students')return {
     id:a.localId||obj.id,name:a.name||'',year:a.year||'',teacherId:a.teacherId||'',phone:a.phone||''
@@ -1723,7 +1768,7 @@ function attendancePayload(item){
   });
   return {
     localId:item.id,
-    date:item.date||'',
+    date:normalizeDateOnly(item.date),
     teacherId:item.teacherId||'',
     subject:item.subject||item.className||'',
     records,
@@ -1734,7 +1779,7 @@ function attendancePayload(item){
 function makeupPayload(item){
   return {
     localId:item.id,
-    date:item.date||'',
+    date:normalizeDateOnly(item.date),
     time:item.time||'',
     teacherId:item.teacherId||'',
     studentId:item.studentId||'',
@@ -1772,7 +1817,7 @@ async function restDeleteOperational(className,localId){
 function remoteAttendanceRow(r){
   return {
     id:r.localId||r.objectId,
-    date:r.date||'',
+    date:normalizeDateOnly(r.date),
     teacherId:r.teacherId||'',
     subject:r.subject||'',
     className:r.subject||'',
@@ -1783,7 +1828,7 @@ function remoteAttendanceRow(r){
 function remoteMakeupRow(r){
   return {
     id:r.localId||r.objectId,
-    date:r.date||'',
+    date:normalizeDateOnly(r.date),
     time:r.time||'',
     teacherId:r.teacherId||'',
     studentId:r.studentId||'',
@@ -1925,6 +1970,19 @@ function toast(msg){const el=document.getElementById('toast');el.textContent=msg
 function closeModal(id){document.getElementById(id).classList.remove('show')}
 function teacherName(id){return db.teachers.find(t=>t.id===id)?.name||'Unassigned'}
 function studentName(id){return db.students.find(s=>s.id===id)?.name||'Student'}
+function formatTime12(value){
+  if(!value)return '';
+  const m=String(value).match(/^(\d{1,2}):(\d{2})/);
+  if(!m)return value;
+  let h=Number(m[1]); const min=m[2]; const ap=h>=12?'PM':'AM';
+  h=h%12||12;
+  return `${h}:${min} ${ap}`;
+}
+function courseTimeText(c){
+  const a=formatTime12(c?.startTime), b=formatTime12(c?.endTime);
+  return a&&b?`${a} – ${b}`:(a||b||'');
+}
+
 function uniqueAssignedStudentCount(teacherId=null){
   const ids=new Set();
   (db.courses||[]).forEach(c=>{
@@ -1936,7 +1994,21 @@ function uniqueAssignedStudentCount(teacherId=null){
   return ids.size;
 }
 
-function ymd(d){return d.toISOString().slice(0,10)}
+function ymd(d){
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+function parseLocalYMD(value){
+  const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m)return null;
+  return new Date(Number(m[1]),Number(m[2])-1,Number(m[3]),12,0,0,0);
+}
+function normalizeDateOnly(value){
+  const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : String(value||'');
+}
 function currentSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY))||null}catch(e){return null}}
 function getTeacherPasswords(){try{return JSON.parse(localStorage.getItem(TEACHER_PASSWORDS_KEY))||{}}catch(e){return {}}}
 function teacherPasswordRecord(username){const all=getTeacherPasswords();return all[(username||'').toLowerCase()]||null}
@@ -2180,11 +2252,86 @@ function renderPeople(){
  document.getElementById('teacherCount').textContent=`${teachers.length} teacher${teachers.length===1?'':'s'}`;
  document.getElementById('courseCount').textContent=`${visibleCourses.length} course${visibleCourses.length===1?'':'s'}`;
  document.getElementById('teacherBody').innerHTML=teachers.length?teachers.map(t=>{const names=db.courses.filter(c=>c.teacherId===t.id).map(c=>c.name).join(' / ');return `<tr><td><div style="display:flex;align-items:center;gap:9px"><div class="avatar">${esc(t.name.charAt(0))}</div><div><b>${esc(t.name)}</b><div class="muted">${esc(t.accountUsername||t.email||'')}</div></div></div></td><td>${esc(names||'-')}</td><td>${esc(t.phone||'-')}</td><td>${teacher?'':`<div class="teacher-actions"><button class="btn soft small" onclick="editTeacher('${t.id}')">Edit</button><button class="btn small reset-password-btn" onclick="openResetPassword('${t.id}')">Reset Password</button><button class="btn danger small teacher-delete-btn" onclick="deleteTeacher('${t.id}')">Delete</button></div>`}</td></tr>`}).join(''):`<tr><td colspan="4"><div class="empty">No teacher found.</div></td></tr>`;
- document.getElementById('courseList').innerHTML=visibleCourses.length?visibleCourses.map(c=>{const students=(c.studentIds||[]).map(id=>db.students.find(s=>s.id===id)).filter(Boolean);return `<div class="course-card" id="course-${c.id}"><div class="course-head" onclick="toggleCourse('${c.id}')"><div class="course-head-left"><span class="course-chevron">⌄</span><div><h4>${esc(c.name)}</h4><div class="muted">${esc(teacherName(c.teacherId))} · ${students.length} student${students.length===1?'':'s'}</div><div class="course-days">${(c.weekdays||[]).map(d=>`<span class="course-day-chip">${esc(d)}</span>`).join('')}</div></div></div><div class="course-actions" onclick="event.stopPropagation()">${teacher?'':`<button class="btn primary small" onclick="openCourseStudentModal('${c.id}')">+ Add Student</button><button class="btn soft small" onclick="openCourseModal('${c.id}')">Edit</button><button class="btn danger small course-delete-btn" onclick="deleteCourse('${c.id}')">Delete</button>`}</div></div><div class="course-students">${students.length?students.map(st=>`<div class="course-student-row"><div><b>${esc(st.name)}</b><div class="muted">${esc(st.year||'')}</div></div>${teacher?'':`<button class="btn soft small" onclick="removeStudentFromCourse('${c.id}','${st.id}')">Remove</button>`}</div>`).join(''):'<div class="empty">No students in this course yet.</div>'}</div></div>`}).join(''):'<div class="empty">No courses found.</div>';
+ document.getElementById('courseList').innerHTML=visibleCourses.length?visibleCourses.map(c=>{const students=(c.studentIds||[]).map(id=>db.students.find(s=>s.id===id)).filter(Boolean);return `<div class="course-card" id="course-${c.id}"><div class="course-head" onclick="toggleCourse('${c.id}')"><div class="course-head-left"><span class="course-chevron">⌄</span><div><h4>${esc(c.name)}</h4><div class="muted">${esc(teacherName(c.teacherId))} · ${students.length} student${students.length===1?'':'s'}</div><div class="course-days">${(c.weekdays||[]).map(d=>`<span class="course-day-chip">${esc(d)}</span>`).join('')}</div>${courseTimeText(c)?`<div class="course-time-display">🕒 ${esc(courseTimeText(c))}</div>`:''}</div></div><div class="course-actions" onclick="event.stopPropagation()">${teacher?'':`<button class="btn primary small" onclick="openCourseStudentModal('${c.id}')">+ Add Student</button><button class="btn soft small" onclick="openCourseModal('${c.id}')">Edit</button><button class="btn danger small course-delete-btn" onclick="deleteCourse('${c.id}')">Delete</button>`}</div></div><div class="course-students">${students.length?students.map(st=>`<div class="course-student-row"><div><b>${esc(st.name)}</b><div class="muted">${esc(st.year||'')}</div></div>${teacher?'':`<button class="btn soft small" onclick="removeStudentFromCourse('${c.id}','${st.id}')">Remove</button>`}</div>`).join(''):'<div class="empty">No students in this course yet.</div>'}</div></div>`}).join(''):'<div class="empty">No courses found.</div>';
 }
 function toggleCourse(id){document.getElementById('course-'+id)?.classList.toggle('open')}
-function openCourseModal(id=null){if(isTeacher())return toast('Admin access only');editingCourse=id;populateSelects();const c=db.courses.find(x=>x.id===id)||{};courseModalTitle.textContent=id?'Edit Course':'Add Course';cName.value=c.name||'';cTeacher.value=c.teacherId||'';setSelectedCourseWeekdays(c.weekdays||[]);courseModal.classList.add('show')}
-courseSaveBtn.onclick=()=>{if(isTeacher())return toast('Admin access only');const name=cName.value.trim(),teacherId=cTeacher.value,weekdays=getSelectedCourseWeekdays();if(!name||!teacherId)return toast('Please enter course and teacher');if(!weekdays.length)return toast('Please select at least one weekday');if(editingCourse){Object.assign(db.courses.find(c=>c.id===editingCourse),{name,teacherId,weekdays})}else db.courses.push({id:uid('c'),name,teacherId,weekdays,studentIds:[]});closeModal('courseModal');save();toast('Course saved')};
+
+async function saveCourseDirectToCloud(course){
+  const existing=(await restQueryClass(B4A_CLASSES.courses,{localId:course.id}))[0]||null;
+  const payload={
+    localId:course.id,
+    name:course.name||'',
+    teacherId:course.teacherId||'',
+    weekdays:Array.isArray(course.weekdays)?course.weekdays:[],
+    studentIds:Array.isArray(course.studentIds)?course.studentIds:[],
+    startTime:course.startTime||'',
+    endTime:course.endTime||''
+  };
+
+  if(existing?.objectId){
+    await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.courses)}/${existing.objectId}`,{
+      method:'PUT',
+      body:JSON.stringify(payload)
+    });
+    return existing.objectId;
+  }
+
+  const created=await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.courses)}`,{
+    method:'POST',
+    body:JSON.stringify(payload)
+  });
+  return created.objectId;
+}
+
+function openCourseModal(id=null){if(isTeacher())return toast('Admin access only');editingCourse=id;populateSelects();const c=db.courses.find(x=>x.id===id)||{};courseModalTitle.textContent=id?'Edit Course':'Add Course';cName.value=c.name||'';cTeacher.value=c.teacherId||'';cStartTime.value=c.startTime||'';cEndTime.value=c.endTime||'';setSelectedCourseWeekdays(c.weekdays||[]);courseModal.classList.add('show')}
+courseSaveBtn.onclick=async()=>{
+  if(isTeacher())return toast('Admin access only');
+
+  const name=cName.value.trim();
+  const teacherId=cTeacher.value;
+  const weekdays=getSelectedCourseWeekdays();
+  const startTime=cStartTime.value||'';
+  const endTime=cEndTime.value||'';
+
+  if(!name)return toast('Please enter course / subject');
+  if(!teacherId)return toast('Please select teacher');
+  if(!weekdays.length)return toast('Please select at least one weekday');
+
+  let course;
+  let isNew=false;
+
+  if(editingCourse){
+    const old=db.courses.find(c=>c.id===editingCourse);
+    if(!old)return toast('Course not found');
+    course={...old,name,teacherId,weekdays,startTime,endTime};
+  }else{
+    isNew=true;
+    course={id:uid('c'),name,teacherId,weekdays,startTime,endTime,studentIds:[]};
+  }
+
+  try{
+    setCloudStatus('syncing','Saving');
+
+    // Save only this single course to Back4App.
+    await saveCourseDirectToCloud(course);
+
+    if(isNew){
+      db.courses.push(course);
+    }else{
+      const idx=db.courses.findIndex(c=>c.id===course.id);
+      if(idx>=0)db.courses[idx]=course;
+    }
+
+    closeModal('courseModal');
+    renderAll();
+    setCloudStatus('online','Online','Course saved');
+    toast('✓ Course saved successfully');
+  }catch(err){
+    console.error('Course direct save failed:',err);
+    setCloudStatus('online','Online',String(err?.message||err));
+    toast('Course save failed: '+String(err?.message||err));
+  }
+};
 
 async function deleteCourse(courseId){
   if(isTeacher()) return toast('Admin access only');
@@ -2240,8 +2387,151 @@ async function deleteCourse(courseId){
   }
 }
 
-function openCourseStudentModal(courseId){if(isTeacher())return toast('Admin access only');activeCourseId=courseId;const c=db.courses.find(x=>x.id===courseId);courseStudentTitle.textContent=`Add Student · ${c?.name||'Course'}`;csName.value='';csYear.value='';csPhone.value='';courseStudentModal.classList.add('show')}
-courseStudentSaveBtn.onclick=()=>{if(isTeacher())return toast('Admin access only');const c=db.courses.find(x=>x.id===activeCourseId),name=csName.value.trim();if(!c||!name)return toast('Please enter student name');let st=db.students.find(s=>s.name.trim().toLowerCase()===name.toLowerCase()&&s.teacherId===c.teacherId);if(!st){st={id:uid('s'),name,year:csYear.value.trim(),teacherId:c.teacherId,phone:csPhone.value.trim()};db.students.push(st)}else{if(csYear.value.trim())st.year=csYear.value.trim();if(csPhone.value.trim())st.phone=csPhone.value.trim()}if(!c.studentIds.includes(st.id))c.studentIds.push(st.id);closeModal('courseStudentModal');save();toast('Student added to course')};
+
+async function upsertStudentFast(student){
+  const existing=(await restQueryClass(B4A_CLASSES.students,{localId:student.id}))[0]||null;
+  const payload={
+    localId:student.id,
+    name:student.name||'',
+    year:student.year||'',
+    teacherId:student.teacherId||'',
+    phone:student.phone||''
+  };
+  if(existing?.objectId){
+    await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.students)}/${existing.objectId}`,{
+      method:'PUT',
+      body:JSON.stringify(payload)
+    });
+  }else{
+    await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.students)}`,{
+      method:'POST',
+      body:JSON.stringify(payload)
+    });
+  }
+}
+
+async function saveStudentsFastInBatches(students){
+  const batchSize=8;
+  for(let i=0;i<students.length;i+=batchSize){
+    await Promise.all(students.slice(i,i+batchSize).map(upsertStudentFast));
+  }
+}
+
+function openCourseStudentModal(courseId){
+  if(isTeacher())return toast('Admin access only');
+  activeCourseId=courseId;
+  const c=db.courses.find(x=>x.id===courseId);
+  courseStudentTitle.textContent=`Bulk Add Students · ${c?.name||'Course'}`;
+  csNames.value='';
+  const first=(c?.studentIds||[]).map(id=>db.students.find(s=>s.id===id)).find(Boolean);
+  csYear.value=first?.year||'';
+  csPhone.value='';
+  courseStudentModal.classList.add('show');
+}
+courseStudentSaveBtn.onclick=async()=>{
+  if(isTeacher())return toast('Admin access only');
+
+  const c=db.courses.find(x=>x.id===activeCourseId);
+  if(!c)return toast('Course not found');
+
+  const year=csYear.value.trim();
+  const phone=csPhone.value.trim();
+  const names=[...new Set(
+    csNames.value
+      .split(/\r?\n/)
+      .map(x=>x.trim().replace(/\s+/g,' '))
+      .filter(Boolean)
+  )];
+
+  if(!names.length)return toast('Please enter at least one student');
+
+  const alreadyInCourse=new Set(
+    (c.studentIds||[])
+      .map(id=>db.students.find(s=>s.id===id)?.name?.trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  const newStudents=[];
+  const addIds=[];
+
+  for(const name of names){
+    if(alreadyInCourse.has(name.toLowerCase()))continue;
+
+    let st=db.students.find(s=>
+      s.name.trim().toLowerCase()===name.toLowerCase() &&
+      s.teacherId===c.teacherId
+    );
+
+    if(!st){
+      st={
+        id:uid('s'),
+        name,
+        year,
+        teacherId:c.teacherId,
+        phone
+      };
+      newStudents.push(st);
+    }else{
+      if(year&&!st.year)st.year=year;
+      if(phone&&!st.phone)st.phone=phone;
+    }
+
+    addIds.push(st.id);
+  }
+
+  if(!addIds.length)return toast('All students are already in this course');
+
+  try{
+    setCloudStatus('syncing','Saving');
+
+    // Save only the affected students, in parallel batches.
+    const affected=[
+      ...newStudents,
+      ...addIds
+        .map(id=>db.students.find(s=>s.id===id))
+        .filter(Boolean)
+        .filter(s=>!newStudents.some(n=>n.id===s.id))
+    ];
+    await saveStudentsFastInBatches(affected);
+
+    // Update local data after student cloud saves succeed.
+    db.students.push(...newStudents);
+    if(!Array.isArray(c.studentIds))c.studentIds=[];
+    c.studentIds=[...new Set([...c.studentIds,...addIds])];
+
+    // Save only this course record directly instead of syncing the entire DB.
+    const existing=(await restQueryClass(B4A_CLASSES.courses,{localId:c.id}))[0]||null;
+    const payload={
+      localId:c.id,
+      name:c.name||'',
+      teacherId:c.teacherId||'',
+      weekdays:Array.isArray(c.weekdays)?c.weekdays:[],
+      studentIds:Array.isArray(c.studentIds)?c.studentIds:[]
+    };
+    if(existing?.objectId){
+      await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.courses)}/${existing.objectId}`,{
+        method:'PUT',
+        body:JSON.stringify(payload)
+      });
+    }else{
+      await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.courses)}`,{
+        method:'POST',
+        body:JSON.stringify(payload)
+      });
+    }
+
+    closeModal('courseStudentModal');
+    renderAll();
+    setCloudStatus('online','Online',`${addIds.length} students added`);
+    toast(`✓ ${addIds.length} students added successfully`);
+
+  }catch(err){
+    console.error('Bulk add students failed:',err);
+    setCloudStatus('online','Online',String(err?.message||err));
+    toast('Bulk save failed: '+String(err?.message||err));
+    try{await loadCoreFromCloud()}catch(_){}
+  }
+};
 function removeStudentFromCourse(courseId,studentId){const c=db.courses.find(x=>x.id===courseId);if(!c)return;c.studentIds=(c.studentIds||[]).filter(id=>id!==studentId);save();toast('Student removed from course')}
 
 
@@ -2326,7 +2616,7 @@ function teacherSubjects(teacher){return db.courses.filter(c=>c.teacherId===teac
 function renderAttendance(){
  const session=currentSession();let teacherId=attTeacher.value;if(session?.role==='teacher'&&session.teacherId)teacherId=session.teacherId;
  const teachersToShow=teacherId?db.teachers.filter(t=>t.id===teacherId):db.teachers;
- attendanceList.innerHTML=teachersToShow.length?teachersToShow.map(teacher=>{const subjects=teacherSubjects(teacher);if(!subjects.length)return `<div class="att-teacher-group"><div class="att-teacher-head"><div><b>${esc(teacher.name||'Teacher')}</b><span class="pill">0 subjects</span></div></div><div class="empty">No subjects added for this teacher.</div></div>`;return `<div class="att-teacher-group"><div class="att-teacher-head"><div><b>${esc(teacher.name||'Teacher')}</b><span class="pill">${subjects.length} subject${subjects.length===1?'':'s'}</span></div></div><div class="subject-att-grid">${subjects.map(subject=>{const course=db.courses.find(c=>c.teacherId===teacher.id&&c.name===subject);const weekdays=(course?.weekdays||[]);const saved=db.attendance.find(a=>a.date===(attDate.value||today)&&a.teacherId===teacher.id&&(a.subject||a.className||'')===subject);const count=saved?Object.keys(saved.records||{}).length:0;return `<div class="subject-att-card"><div><div class="subject-att-name">${esc(subject)}</div><div class="attendance-course-weekdays">${weekdays.length?weekdays.map(d=>`<span class="course-day-chip">${esc(d)}</span>`).join(''):`<span class="weekday-not-set">Weekday not set</span>`}</div><div class="muted">${saved?`Attendance saved · ${count} student${count===1?'':'s'}`:'Not taken yet'}</div></div><button class="btn primary small" type="button" onclick="openAttendanceForSubject('${teacher.id}',${JSON.stringify(subject).replace(/"/g,'&quot;')})">Take Attendance</button></div>`}).join('')}</div></div>`}).join(''):`<div class="empty">No teachers found.</div>`;
+ attendanceList.innerHTML=teachersToShow.length?teachersToShow.map(teacher=>{const subjects=teacherSubjects(teacher);if(!subjects.length)return `<div class="att-teacher-group"><div class="att-teacher-head"><div><b>${esc(teacher.name||'Teacher')}</b><span class="pill">0 subjects</span></div></div><div class="empty">No subjects added for this teacher.</div></div>`;return `<div class="att-teacher-group"><div class="att-teacher-head"><div><b>${esc(teacher.name||'Teacher')}</b><span class="pill">${subjects.length} subject${subjects.length===1?'':'s'}</span></div></div><div class="subject-att-grid">${subjects.map(subject=>{const course=db.courses.find(c=>c.teacherId===teacher.id&&c.name===subject);const weekdays=(course?.weekdays||[]);const saved=db.attendance.find(a=>a.date===(attDate.value||today)&&a.teacherId===teacher.id&&(a.subject||a.className||'')===subject);const count=saved?Object.keys(saved.records||{}).length:0;return `<div class="subject-att-card"><div><div class="subject-att-name">${esc(subject)}</div><div class="attendance-course-weekdays">${weekdays.length?weekdays.map(d=>`<span class="course-day-chip">${esc(d)}</span>`).join(''):`<span class="weekday-not-set">Weekday not set</span>`}</div>${courseTimeText(course)?`<div class="attendance-course-time">🕒 ${esc(courseTimeText(course))}</div>`:''}<div class="muted">${saved?`Attendance saved · ${count} student${count===1?'':'s'}`:'Not taken yet'}</div></div><button class="btn primary small" type="button" onclick="openAttendanceForSubject('${teacher.id}',${JSON.stringify(subject).replace(/"/g,'&quot;')})">Take Attendance</button></div>`}).join('')}</div></div>`}).join(''):`<div class="empty">No teachers found.</div>`;
 }
 function openAttendanceForSubject(teacherId,subject){const session=currentSession();if(session?.role==='teacher'&&session.teacherId!==teacherId)return toast('You can only take attendance for your own classes');activeAttendanceTeacherId=teacherId;activeAttendanceSubject=subject;const teacher=db.teachers.find(t=>t.id===teacherId),date=attDate.value||today,course=db.courses.find(c=>c.teacherId===teacherId&&c.name===subject),students=(course?.studentIds||[]).map(id=>db.students.find(s=>s.id===id)).filter(Boolean),saved=db.attendance.find(a=>a.date===date&&a.teacherId===teacherId&&(a.subject||a.className||'')===subject),map=saved?.records||{};attendanceModalTitle.textContent=`Take Attendance · ${subject}`;attendanceModalMeta.textContent=`${teacher?.name||'Teacher'} · ${date}`;attendanceModalStudents.innerHTML=students.length?students.map(student=>`<div class="att-row"><div class="student-name"><b>${esc(student.name)}</b><div class="muted">${esc(student.year||'')}</div></div>${['present','late','absent'].map(st=>`<button class="status-btn ${st} ${map[student.id]===st?'active':''}" data-student="${student.id}" data-status="${st}">${st[0].toUpperCase()+st.slice(1)}</button>`).join('')}</div>`).join(''):`<div class="empty">No students assigned to this teacher yet.</div>`;attendanceModalStudents.querySelectorAll('.status-btn').forEach(btn=>btn.onclick=()=>{const row=btn.closest('.att-row');row.querySelectorAll('.status-btn').forEach(x=>x.classList.remove('active'));btn.classList.add('active')});attendanceModal.classList.add('show')}
 attTeacher.onchange=attDate.onchange=renderAttendance;
@@ -2393,7 +2683,7 @@ function openMakeupModal(id=null,date=null){
   if(session?.role==='teacher'&&id&&m.teacherId!==session.teacherId)return toast('You can only open your own makeup classes');
 
   makeupModalTitle.textContent=id?'Edit Makeup Class':'Add Makeup Class';
-  mDate.value=m.date||date||today;
+  mDate.value=normalizeDateOnly(m.date||date||today);
   mTime.value=m.time||'';
   mTeacher.value=session?.role==='teacher'?session.teacherId:(m.teacherId||'');
   mSubject.value=m.subject||'';
@@ -2420,7 +2710,7 @@ makeupSaveBtn.onclick=async()=>{
   if(!makeupStudentNames.length)return toast('Please add at least one student');
 
   const data={
-    date:mDate.value,
+    date:normalizeDateOnly(mDate.value),
     time:mTime.value,
     teacherId,
     studentId:'',
