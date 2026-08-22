@@ -1262,7 +1262,7 @@ html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announce
 @media(max-width:760px){.announcement-card{grid-template-columns:1fr;padding:15px}.announcement-icon{width:46px;height:46px}.announcement-title-row{flex-direction:column;align-items:stretch}.announcement-title-row .btn{width:100%}}
 
 
-/* ===== V52 Announcement Manager + Pagination ===== */
+/* ===== V60 First Login Password + Pagination ===== */
 .announcement-footer{
   margin-top:10px;
   display:flex;
@@ -1355,6 +1355,42 @@ html.dark-mode .announcement-list-item{
   }
 }
 
+
+/* ===== V56 Announcement Attachment Link ===== */
+.announcement-attachment{
+  margin-top:12px;
+}
+.announcement-attachment img{
+  display:block;
+  max-width:100%;
+  max-height:320px;
+  object-fit:contain;
+  border-radius:14px;
+  border:1px solid var(--line);
+}
+.announcement-link-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:9px 12px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  color:inherit;
+  text-decoration:none;
+  font-weight:800;
+  background:rgba(255,255,255,.04);
+}
+.announcement-list-attachment{
+  margin-top:9px;
+}
+.announcement-list-attachment img{
+  max-width:180px;
+  max-height:120px;
+  object-fit:cover;
+  border-radius:10px;
+  border:1px solid var(--line);
+}
+
 </style>
 <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
 </head>
@@ -1404,7 +1440,7 @@ html.dark-mode .announcement-list-item{
     <header class="topbar">
       <div class="topbar-left"><button class="mobile-menu" id="menuBtn">☰</button><div><h1 id="topTitle">Dashboard</h1><small>WELCOME BACK DEAR TEACHERS</small></div></div>
       <div class="topbar-center"><div class="today" id="todayText"></div></div>
-      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V52 Announcement Manager Login Fixed"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
+      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V60 First Login Password Login Fixed"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
     </header>
     <div class="content">
       <section class="page active" id="dashboard">
@@ -1426,6 +1462,7 @@ html.dark-mode .announcement-list-item{
       <button class="btn soft small" id="editAnnouncementBtn" type="button">Manage Announcements</button>
     </div>
     <div class="announcement-message" id="announcementMessage">No announcement yet.</div>
+    <div id="announcementAttachment" class="announcement-attachment"></div>
     <div class="announcement-footer">
       <div class="announcement-meta" id="announcementMeta"></div>
       <div class="announcement-pager" id="announcementPager">
@@ -1503,7 +1540,10 @@ html.dark-mode .announcement-list-item{
       <section class="page" id="people">
         <div class="page-head"><div><h2>Teacher & Course</h2><div class="muted">管理老师、科目与科目内的学生。</div></div></div>
         <div class="split">
-          <div class="card section-card"><div class="section-title"><div><h3>Teachers</h3><span class="count" id="teacherCount">0 teachers</span></div><button class="btn primary small" onclick="openTeacherModal()">+ Add Teacher</button></div><div class="toolbar"><input id="teacherSearch" placeholder="Search teacher..."></div><div class="table-wrap"><table class="table"><thead><tr><th>Teacher</th><th>Course</th><th>Phone</th><th></th></tr></thead><tbody id="teacherBody"></tbody></table></div></div>
+          <div class="card section-card"><div class="section-title"><div><h3>Teachers</h3><span class="count" id="teacherCount">0 teachers</span></div><div style="display:flex;gap:8px;flex-wrap:wrap">
+<button class="btn soft small" id="migrateUsersBtn" type="button">Sync Teacher Accounts</button>
+<button class="btn primary small" onclick="openTeacherModal()">+ Add Teacher</button>
+</div></div><div class="toolbar"><input id="teacherSearch" placeholder="Search teacher..."></div><div class="table-wrap"><table class="table"><thead><tr><th>Teacher</th><th>Course</th><th>Phone</th><th></th></tr></thead><tbody id="teacherBody"></tbody></table></div></div>
           <div class="card section-card"><div class="section-title"><div><h3>Courses</h3><span class="count" id="courseCount">0 courses</span></div><button class="btn primary small" onclick="openCourseModal()">+ Add Course</button></div><div class="toolbar"><input id="courseSearch" placeholder="Search course..."></div><div id="courseList" class="course-list"></div></div>
         </div>
       </section>
@@ -1524,6 +1564,11 @@ html.dark-mode .announcement-list-item{
     <div class="form-grid">
       <div class="field full"><label>Title</label><input id="announcementTitleInput" placeholder="e.g. Important Notice"></div>
       <div class="field full"><label>Announcement</label><textarea id="announcementMessageInput" rows="7" placeholder="Write announcement here..."></textarea></div>
+      <div class="field full">
+        <label>Attachment Link <span class="muted">(optional)</span></label>
+        <input id="announcementLinkInput" type="url" placeholder="Paste Google Drive / PDF / image link here...">
+        <div class="muted" style="margin-top:6px">Example: Google Drive, OneDrive, Dropbox, PDF or image link.</div>
+      </div>
     </div>
     <div class="actions">
       <button class="btn soft" type="button" onclick="closeModal('announcementModal')">Cancel</button>
@@ -2066,6 +2111,11 @@ let announcementListPage=1;
 let editingAnnouncementObjectId=null;
 const ANNOUNCEMENTS_PER_PAGE=5;
 
+
+function isDirectImageLink(url){
+  return /\.(png|jpe?g|gif|webp|bmp|svg)(\?.*)?$/i.test(String(url||''));
+}
+
 function announcementSortValue(a){
   return String(a.updatedAt||a.createdAt||'');
 }
@@ -2091,6 +2141,8 @@ function renderAnnouncement(){
     if(title)title.textContent='Announcement';
     if(msg)msg.textContent='No announcement yet.';
     if(meta)meta.textContent='';
+    const emptyAttachment=document.getElementById('announcementAttachment');
+    if(emptyAttachment)emptyAttachment.innerHTML='';
     if(pageText)pageText.textContent='0 / 0';
     if(prev)prev.disabled=true;
     if(next)next.disabled=true;
@@ -2105,6 +2157,17 @@ function renderAnnouncement(){
   const item=announcements[dashboardAnnouncementIndex];
   if(title)title.textContent=item.title||'Announcement';
   if(msg)msg.textContent=item.message||'';
+  const attachment=document.getElementById('announcementAttachment');
+  if(attachment){
+    const link=item.attachmentLink||'';
+    if(link){
+      attachment.innerHTML=isDirectImageLink(link)
+        ? `<a href="${esc(link)}" target="_blank" rel="noopener"><img src="${esc(link)}" alt="Announcement attachment"></a>`
+        : `<a class="announcement-link-btn" href="${esc(link)}" target="_blank" rel="noopener">📎 View Attachment</a>`;
+    }else{
+      attachment.innerHTML='';
+    }
+  }
   if(meta){
     const updated=item.updatedAt?new Date(item.updatedAt).toLocaleString():'';
     meta.textContent=updated?`Last updated: ${updated}`:'';
@@ -2139,6 +2202,7 @@ function renderAnnouncementManager(){
       <div>
         <h4>${esc(a.title||'Announcement')}</h4>
         <div class="announcement-list-message">${esc(a.message||'')}</div>
+        ${a.attachmentLink?`<div class="announcement-list-attachment">${isDirectImageLink(a.attachmentLink)?`<a href="${esc(a.attachmentLink)}" target="_blank" rel="noopener"><img src="${esc(a.attachmentLink)}" alt="Attachment"></a>`:`<a class="announcement-link-btn" href="${esc(a.attachmentLink)}" target="_blank" rel="noopener">📎 View Attachment</a>`}</div>`:''}
         <div class="announcement-list-meta">${a.updatedAt?`Updated: ${esc(new Date(a.updatedAt).toLocaleString())}`:''}</div>
       </div>
       ${currentSession()?.role==='admin'?`
@@ -2163,6 +2227,7 @@ async function loadAnnouncementFromCloud(){
         objectId:r.objectId,
         title:r.title||'Announcement',
         message:r.message||'',
+        attachmentLink:r.attachmentLink||'',
         createdAt:r.createdAt||'',
         updatedAt:r.updatedAt||r.createdAt||''
       }))
@@ -2184,11 +2249,12 @@ function openAnnouncementModal(objectId=null){
   announcementModalTitle.textContent=objectId?'Edit Announcement':'Add Announcement';
   announcementTitleInput.value=item?.title||'';
   announcementMessageInput.value=item?.message||'';
+  announcementLinkInput.value=item?.attachmentLink||'';
   announcementModal.classList.add('show');
 }
 
-async function saveAnnouncementToCloud(title,message){
-  const payload={title,message};
+async function saveAnnouncementToCloud(title,message,attachmentLink=''){
+  const payload={title,message,attachmentLink};
 
   if(editingAnnouncementObjectId){
     const res=await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.announcements)}/${editingAnnouncementObjectId}`,{
@@ -2200,6 +2266,7 @@ async function saveAnnouncementToCloud(title,message){
     if(item){
       item.title=title;
       item.message=message;
+      item.attachmentLink=attachmentLink||'';
       item.updatedAt=res.updatedAt||new Date().toISOString();
     }
   }else{
@@ -2212,6 +2279,7 @@ async function saveAnnouncementToCloud(title,message){
       objectId:res.objectId,
       title,
       message,
+      attachmentLink:attachmentLink||'',
       createdAt:res.createdAt||new Date().toISOString(),
       updatedAt:res.createdAt||new Date().toISOString()
     });
@@ -2362,6 +2430,67 @@ function normalizeDateOnly(value){
   const m=String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : String(value||'');
 }
+
+async function parseLogin(username,password){
+  const user=await Parse.User.logIn(username,password);
+  return user;
+}
+function parseUserRole(user){
+  return String(user?.get('role')||'teacher').toLowerCase();
+}
+function parseUserTeacherId(user){
+  return String(user?.get('teacherId')||'');
+}
+async function ensureAdminParseUser(){
+  // One-time bootstrap for the existing Admin login.
+  // If admin already exists, this simply logs in.
+  try{
+    return await Parse.User.logIn('admin','123456');
+  }catch(loginErr){
+    if(loginErr?.code!==101)throw loginErr;
+    const u=new Parse.User();
+    u.set('username','admin');
+    u.set('password','123456');
+    u.set('role','admin');
+    u.set('displayName','Admin');
+    return await u.signUp();
+  }
+}
+async function createTeacherParseUser(t){
+  const username=String(t.accountUsername||'').trim();
+  if(!username)throw new Error(`${t.name} has no username`);
+
+  // Check first so Sync can safely be pressed again without duplicates.
+  const q=new Parse.Query(Parse.User);
+  q.equalTo('username',username);
+  let existing=null;
+  try{ existing=await q.first(); }catch(e){}
+
+  if(existing){
+    return {ok:true,created:false,username};
+  }
+
+  const u=new Parse.User();
+  u.set('username',username);
+  u.set('password','123456');
+  u.set('role','teacher');
+  u.set('teacherId',t.id);
+  u.set('displayName',t.name||username);
+  u.set('mustChangePassword',true);
+  if(t.email)u.set('email',t.email);
+
+  try{
+    await u.signUp();
+    await Parse.User.logOut();
+    return {ok:true,created:true,username};
+  }catch(err){
+    if(err?.code===202){
+      return {ok:true,created:false,username};
+    }
+    throw err;
+  }
+}
+
 function currentSession(){try{return JSON.parse(localStorage.getItem(SESSION_KEY))||null}catch(e){return null}}
 function getTeacherPasswords(){try{return JSON.parse(localStorage.getItem(TEACHER_PASSWORDS_KEY))||{}}catch(e){return {}}}
 function teacherPasswordRecord(username){const all=getTeacherPasswords();return all[(username||'').toLowerCase()]||null}
@@ -2400,6 +2529,7 @@ function applyRoleUI(){
  const teacherPage=document.querySelector('[data-page="people"]');
  // Teachers may view their own profile/student list, but cannot manage teacher/student records.
  document.querySelectorAll('button[onclick^="openTeacherModal"],button[onclick^="openStudentModal"]').forEach(b=>b.style.display=teacher?'none':'');
+ const migrateBtn=document.getElementById('migrateUsersBtn');if(migrateBtn)migrateBtn.style.display=teacher?'none':'';
  const addMakeup=document.querySelector('#calendar .page-head > button');
  if(addMakeup)addMakeup.style.display='';
  if(teacher && teacherId){
@@ -2414,26 +2544,118 @@ function showAppForSession(session){
  renderAll();
  if(session.role==='teacher'&&!teacherHasChangedPassword(session.username))openFirstPasswordModal(session);
 }
-function restoreSession(){try{const session=currentSession();if(session&&session.role)showAppForSession(session)}catch(e){}}
+function restoreSession(){try{
+ const session=currentSession();
+ if(!session)return;
+ if(session.role==='admin' && session.authMode==='local-admin'){
+   showAppForSession(session);
+   return;
+ }
+ const parseUser=(typeof Parse!=='undefined')?Parse.User.current():null;
+ if(session.role==='teacher' && parseUser){
+   showAppForSession(session);
+ }else{
+   localStorage.removeItem(SESSION_KEY);
+ }
+}catch(e){}}
 document.querySelectorAll('.role-btn').forEach(btn=>btn.onclick=()=>{
  selectedLoginRole=btn.dataset.role;
  document.querySelectorAll('.role-btn').forEach(x=>x.classList.toggle('active',x===btn));
  document.getElementById('loginError').textContent='';
  document.getElementById('loginHint').innerHTML=selectedLoginRole==='admin'
   ?'<b>Admin login</b><br>Username: admin &nbsp; | &nbsp; Password: 123456'
-  :'<b>Teacher login</b><br>Use your teacher username. Default password: 123456';
+  :'<b>Teacher login</b><br>Uses Back4App _User account';
 });
 document.getElementById('showPassword').onclick=()=>{const p=document.getElementById('loginPassword');const show=p.type==='password';p.type=show?'text':'password';document.getElementById('showPassword').textContent=show?'HIDE':'SHOW'};
-function performLogin(){
- const user=document.getElementById('loginUser').value.trim(); const pass=document.getElementById('loginPassword').value; const err=document.getElementById('loginError');err.textContent=''; let session=null;
- if(selectedLoginRole==='admin'){if(user.toLowerCase()==='admin'&&pass==='123456')session={role:'admin',name:'Admin'}}
- else{
-   if(!cloudReady){err.textContent='Cloud data is still loading. Please wait a moment.';return}
-   const teacher=getTeacherLogin(user);if(teacher&&pass===teacherPasswordFor(teacher.accountUsername))session={role:'teacher',name:teacher.name,teacherId:teacher.id,username:teacher.accountUsername}}
- if(!session){err.textContent='Incorrect username or password.';return}
- localStorage.setItem(SESSION_KEY,JSON.stringify(session));showAppForSession(session);document.getElementById('loginPassword').value='';
+async function performLogin(){
+ const user=document.getElementById('loginUser').value.trim();
+ const pass=document.getElementById('loginPassword').value;
+ const err=document.getElementById('loginError');
+ err.textContent='';
+
+ if(!user||!pass){
+   err.textContent='Please enter username and password.';
+   return;
+ }
+
+ try{
+   let session=null;
+
+   // V58 transition mode:
+   // Keep the existing Admin login working so Admin can never be locked out.
+   if(selectedLoginRole==='admin'){
+     if(user.toLowerCase()==='admin' && pass==='123456'){
+       session={role:'admin',name:'Admin',authMode:'local-admin'};
+     }else{
+       err.textContent='Incorrect Admin username or password.';
+       return;
+     }
+   }else{
+     // Teachers authenticate against real Back4App _User.
+     if(!cloudReady){
+       err.textContent='Cloud data is still loading. Please wait a moment.';
+       return;
+     }
+
+     const parseUser=await Parse.User.logIn(user,pass);
+     const role=String(parseUser.get('role')||'teacher').toLowerCase();
+
+     if(role!=='teacher'){
+       await Parse.User.logOut();
+       err.textContent='This account is not a Teacher account.';
+       return;
+     }
+
+     const teacherId=String(parseUser.get('teacherId')||'');
+     const teacher=db.teachers.find(t=>t.id===teacherId) || getTeacherLogin(parseUser.getUsername());
+
+     if(!teacher){
+       await Parse.User.logOut();
+       err.textContent='Teacher profile is not linked to this account.';
+       return;
+     }
+
+     session={
+       role:'teacher',
+       name:teacher.name,
+       teacherId:teacher.id,
+       username:parseUser.getUsername(),
+       parseUserId:parseUser.id,
+       authMode:'parse'
+     };
+   }
+
+   localStorage.setItem(SESSION_KEY,JSON.stringify(session));
+   showAppForSession(session);
+   document.getElementById('loginPassword').value='';
+
+   // Teachers must change the temporary password immediately after login.
+   if(session.role==='teacher'){
+     const pu=Parse.User.current();
+     const mustChange=(pu?.get('mustChangePassword')!==false);
+     if(mustChange){
+       setTimeout(()=>{
+         const modal=document.getElementById('firstPasswordModal');
+         if(modal){
+           modal.classList.add('show');
+           const p1=document.getElementById('firstPassword1');
+           const p2=document.getElementById('firstPassword2');
+           if(p1)p1.value='';
+           if(p2)p2.value='';
+           if(p1)p1.focus();
+         }
+       },150);
+     }
+   }
+
+ }catch(e){
+   console.error('Login failed:',e);
+   err.textContent=(e?.code===101)
+     ? 'Incorrect teacher username or password.'
+     : ('Login failed: '+String(e?.message||e));
+ }
 }
-document.getElementById('firstPasswordSave').onclick=()=>{
+document.getElementById('firstPasswordSave').onclick=async()=>{
  const session=currentSession();
  if(!session||session.role!=='teacher')return;
  const p1=document.getElementById('firstNewPassword').value;
@@ -2443,16 +2665,25 @@ document.getElementById('firstPasswordSave').onclick=()=>{
  if(p1.length<6){err.textContent='Password must be at least 6 characters.';return}
  if(p1===DEFAULT_TEACHER_PASSWORD){err.textContent='Please choose a password different from 123456.';return}
  if(p1!==p2){err.textContent='The two passwords do not match.';return}
- saveTeacherPassword(session.username,p1);
- document.getElementById('firstPasswordModal').classList.remove('show');
- toast('Password updated successfully');
+ try{
+   const u=Parse.User.current();
+   if(!u)throw new Error('Teacher Back4App session expired. Please log in again.');
+   u.set('password',p1);
+   u.set('mustChangePassword',false);
+   await u.save();
+   saveTeacherPassword(session.username,p1); // local flag only; authentication is now Back4App.
+   document.getElementById('firstPasswordModal').classList.remove('show');
+   toast('Password updated successfully');
+ }catch(e){
+   err.textContent='Password update failed: '+String(e?.message||e);
+ }
 };
 document.getElementById('firstNewPassword').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('firstPasswordSave').click()});
 document.getElementById('firstConfirmPassword').addEventListener('keydown',e=>{if(e.key==='Enter')document.getElementById('firstPasswordSave').click()});
 document.getElementById('loginBtn').onclick=performLogin;
 document.getElementById('loginUser').addEventListener('keydown',e=>{if(e.key==='Enter')performLogin()});
 document.getElementById('loginPassword').addEventListener('keydown',e=>{if(e.key==='Enter')performLogin()});
-document.getElementById('logoutBtn').onclick=()=>{localStorage.removeItem(SESSION_KEY);document.getElementById('firstPasswordModal').classList.remove('show');document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent=''};
+document.getElementById('logoutBtn').onclick=async()=>{const sess=currentSession();if(sess?.authMode==='parse'){try{await Parse.User.logOut()}catch(e){}}localStorage.removeItem(SESSION_KEY);document.getElementById('firstPasswordModal').classList.remove('show');document.getElementById('loginScreen').classList.remove('hidden');document.getElementById('loginPassword').value='';document.getElementById('loginError').textContent=''};
 
 // ===== V8 Persistent Dark Mode =====
 const THEME_KEY='sfe_attendance_theme';
@@ -2505,11 +2736,12 @@ document.getElementById('announcementSaveBtn')?.addEventListener('click',async()
 
   const title=announcementTitleInput.value.trim()||'Announcement';
   const message=announcementMessageInput.value.trim();
+  const attachmentLink=announcementLinkInput.value.trim();
   if(!message)return toast('Please enter announcement');
 
   try{
     setCloudStatus('syncing','Saving');
-    await saveAnnouncementToCloud(title,message);
+    await saveAnnouncementToCloud(title,message,attachmentLink);
     closeModal('announcementModal');
     setCloudStatus('online','Online','Announcement saved');
     toast('Announcement saved successfully');
@@ -2543,6 +2775,54 @@ document.getElementById('announcementListNext')?.addEventListener('click',()=>{
   if(announcementListPage<totalPages){
     announcementListPage++;
     renderAnnouncementManager();
+  }
+});
+
+
+document.getElementById('migrateUsersBtn')?.addEventListener('click',async()=>{
+  if(currentSession()?.role!=='admin')return toast('Admin access only');
+  if(!cloudReady)return toast('Back4App is not connected yet.');
+
+  const teachers=db.teachers.filter(t=>String(t.accountUsername||'').trim());
+  if(!teachers.length)return toast('No teacher usernames found.');
+
+  if(!confirm(
+    `Sync ${teachers.length} teacher account(s) to Back4App _User?\n\n`+
+    `• Existing _User accounts will NOT be duplicated.\n`+
+    `• New accounts use the teacher's current username.\n`+
+    `• New account temporary password: 123456\n`+
+    `• Teacher profile/course/student data will not be deleted.`
+  ))return;
+
+  const btn=document.getElementById('migrateUsersBtn');
+  const oldText=btn.textContent;
+  btn.disabled=true;
+  btn.textContent='Syncing...';
+
+  let created=0,existing=0,failed=[];
+  try{
+    for(const t of teachers){
+      try{
+        const r=await createTeacherParseUser(t);
+        if(r.created)created++;
+        else existing++;
+      }catch(e){
+        console.error('Teacher _User sync failed:',t.name,e);
+        failed.push(`${t.name}: ${String(e?.message||e)}`);
+      }
+    }
+
+    alert(
+      `Teacher account sync complete.\n\n`+
+      `New _User accounts: ${created}\n`+
+      `Already existed: ${existing}\n`+
+      `Failed: ${failed.length}\n\n`+
+      (failed.length ? `Please check:\n${failed.join('\n')}` :
+      `You can now open Back4App → Database → _User to verify the accounts.`)
+    );
+  }finally{
+    btn.disabled=false;
+    btn.textContent=oldText;
   }
 });
 
@@ -2956,31 +3236,28 @@ function openResetPassword(teacherId){
   resetPasswordModal.classList.add('show');
 }
 
-confirmResetPasswordBtn.onclick=()=>{
+confirmResetPasswordBtn.onclick=async()=>{
   if(isTeacher())return toast('Admin access only');
   const t=db.teachers.find(x=>x.id===resetTeacherId);
   if(!t)return toast('Teacher not found');
-
   const newPassword=resetPasswordInput.value.trim();
   if(newPassword.length<6)return toast('Password must be at least 6 characters');
-
   const username=(t.accountUsername||'').trim();
   if(!username)return toast('This teacher has no username');
 
-  const key=username.toLowerCase();
-  const passwords=getTeacherPasswords();
-
-  // IMPORTANT: Login reads an object record, not a raw string.
-  passwords[key]={
-    password:newPassword,
-    changed:!forcePasswordChange.checked,
-    updatedAt:new Date().toISOString(),
-    resetByAdmin:true
-  };
-  localStorage.setItem(TEACHER_PASSWORDS_KEY,JSON.stringify(passwords));
-
-  closeModal('resetPasswordModal');
-  toast(`Password reset for ${t.name}`);
+  // Client-side Parse security does not allow an admin to arbitrarily change
+  // another _User password. Use Parse's password reset email when email exists.
+  if(t.email){
+    try{
+      await Parse.User.requestPasswordReset(t.email);
+      closeModal('resetPasswordModal');
+      toast(`Password reset email sent to ${t.email}`);
+    }catch(e){
+      toast('Password reset failed: '+String(e?.message||e));
+    }
+  }else{
+    toast('Add this teacher email first, then use Reset Password.');
+  }
 };
 
 
