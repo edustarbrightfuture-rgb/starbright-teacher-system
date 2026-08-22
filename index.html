@@ -1262,7 +1262,7 @@ html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announce
 @media(max-width:760px){.announcement-card{grid-template-columns:1fr;padding:15px}.announcement-icon{width:46px;height:46px}.announcement-title-row{flex-direction:column;align-items:stretch}.announcement-title-row .btn{width:100%}}
 
 
-/* ===== V60 First Login Password + Pagination ===== */
+/* ===== V62 Admin Parse Upload + Pagination ===== */
 .announcement-footer{
   margin-top:10px;
   display:flex;
@@ -1440,7 +1440,7 @@ html.dark-mode .announcement-list-item{
     <header class="topbar">
       <div class="topbar-left"><button class="mobile-menu" id="menuBtn">☰</button><div><h1 id="topTitle">Dashboard</h1><small>WELCOME BACK DEAR TEACHERS</small></div></div>
       <div class="topbar-center"><div class="today" id="todayText"></div></div>
-      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V60 First Login Password Login Fixed"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
+      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V65 Login Working Admin Parse Upload Login Fixed"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
     </header>
     <div class="content">
       <section class="page active" id="dashboard">
@@ -1565,9 +1565,14 @@ html.dark-mode .announcement-list-item{
       <div class="field full"><label>Title</label><input id="announcementTitleInput" placeholder="e.g. Important Notice"></div>
       <div class="field full"><label>Announcement</label><textarea id="announcementMessageInput" rows="7" placeholder="Write announcement here..."></textarea></div>
       <div class="field full">
+        <label>Upload Picture / File <span class="muted">(optional)</span></label>
+        <input id="announcementFileInput" type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt">
+        <div id="announcementUploadStatus" class="muted" style="margin-top:6px">Picture, PDF, Word, Excel, PowerPoint or TXT. Maximum 10 MB.</div>
+      </div>
+      <div class="field full">
         <label>Attachment Link <span class="muted">(optional)</span></label>
-        <input id="announcementLinkInput" type="url" placeholder="Paste Google Drive / PDF / image link here...">
-        <div class="muted" style="margin-top:6px">Example: Google Drive, OneDrive, Dropbox, PDF or image link.</div>
+        <input id="announcementLinkInput" type="url" placeholder="Or paste Google Drive / PDF / image link here...">
+        <div class="muted" style="margin-top:6px">You can upload a file above OR paste an online link here.</div>
       </div>
     </div>
     <div class="actions">
@@ -2240,6 +2245,38 @@ async function loadAnnouncementFromCloud(){
   renderAnnouncement();
 }
 
+
+async function uploadAnnouncementFile(file){
+  if(!file)return '';
+  if(file.size>10*1024*1024)throw new Error('File is larger than 10 MB.');
+
+  const current=Parse.User.current();
+  if(!current)throw new Error('Admin Back4App session is not active. Please log out and log in again.');
+
+  const safeName=(file.name||'attachment').replace(/[^\w.\-() ]+/g,'_');
+  const parseFile=new Parse.File(safeName,file,file.type||'application/octet-stream');
+
+  const timeout=new Promise((_,reject)=>{
+    setTimeout(()=>reject(new Error('Upload timed out after 20 seconds.')),20000);
+  });
+
+  try{
+    const saved=await Promise.race([
+      parseFile.save({sessionToken:current.getSessionToken()}),
+      timeout
+    ]);
+    const url=saved?.url?.();
+    if(!url)throw new Error('Back4App did not return a file URL.');
+    return url;
+  }catch(e){
+    const msg=String(e?.message||e);
+    if(/public.*disabled|authenticated|file upload/i.test(msg)){
+      throw new Error(msg+' Please enable file upload for Authenticated Users in Back4App.');
+    }
+    throw e;
+  }
+}
+
 function openAnnouncementModal(objectId=null){
   if(currentSession()?.role!=='admin')return toast('Admin access only');
 
@@ -2250,6 +2287,10 @@ function openAnnouncementModal(objectId=null){
   announcementTitleInput.value=item?.title||'';
   announcementMessageInput.value=item?.message||'';
   announcementLinkInput.value=item?.attachmentLink||'';
+  const fileInput=document.getElementById('announcementFileInput');
+  const uploadStatus=document.getElementById('announcementUploadStatus');
+  if(fileInput)fileInput.value='';
+  if(uploadStatus)uploadStatus.textContent='Picture, PDF, Word, Excel, PowerPoint or TXT. Maximum 10 MB.';
   announcementModal.classList.add('show');
 }
 
@@ -2544,20 +2585,37 @@ function showAppForSession(session){
  renderAll();
  if(session.role==='teacher'&&!teacherHasChangedPassword(session.username))openFirstPasswordModal(session);
 }
-function restoreSession(){try{
- const session=currentSession();
- if(!session)return;
- if(session.role==='admin' && session.authMode==='local-admin'){
-   showAppForSession(session);
-   return;
+function restoreSession(){
+ try{
+   const session=currentSession();
+   if(!session)return;
+
+   if(session.role==='admin' && session.authMode==='local-admin'){
+     showAppForSession(session);
+     return;
+   }
+
+   const parseUser=(typeof Parse!=='undefined') ? Parse.User.current() : null;
+
+   if(session.role==='admin'){
+     if(parseUser || session.authMode==='local-admin'){
+       showAppForSession(session);
+     }else{
+       localStorage.removeItem(SESSION_KEY);
+     }
+     return;
+   }
+
+   if(session.role==='teacher' && parseUser){
+     showAppForSession(session);
+   }else{
+     localStorage.removeItem(SESSION_KEY);
+   }
+ }catch(e){
+   console.error('Restore session failed:',e);
  }
- const parseUser=(typeof Parse!=='undefined')?Parse.User.current():null;
- if(session.role==='teacher' && parseUser){
-   showAppForSession(session);
- }else{
-   localStorage.removeItem(SESSION_KEY);
- }
-}catch(e){}}
+}
+
 document.querySelectorAll('.role-btn').forEach(btn=>btn.onclick=()=>{
  selectedLoginRole=btn.dataset.role;
  document.querySelectorAll('.role-btn').forEach(x=>x.classList.toggle('active',x===btn));
@@ -2568,6 +2626,8 @@ document.querySelectorAll('.role-btn').forEach(btn=>btn.onclick=()=>{
 });
 document.getElementById('showPassword').onclick=()=>{const p=document.getElementById('loginPassword');const show=p.type==='password';p.type=show?'text':'password';document.getElementById('showPassword').textContent=show?'HIDE':'SHOW'};
 async function performLogin(){
+ const loginButton=document.getElementById('loginBtn');
+ if(loginButton){loginButton.disabled=true;loginButton.textContent='SIGNING IN...';}
  const user=document.getElementById('loginUser').value.trim();
  const pass=document.getElementById('loginPassword').value;
  const err=document.getElementById('loginError');
@@ -2581,17 +2641,41 @@ async function performLogin(){
  try{
    let session=null;
 
-   // V58 transition mode:
-   // Keep the existing Admin login working so Admin can never be locked out.
    if(selectedLoginRole==='admin'){
-     if(user.toLowerCase()==='admin' && pass==='123456'){
-       session={role:'admin',name:'Admin',authMode:'local-admin'};
+     if(user.toLowerCase()!=='admin' || pass!=='123456'){
+       // If a real Back4App Admin password has already been set, try it too.
+       try{
+         const pu=await Parse.User.logIn(user,pass);
+         const role=String(pu?.get('role')||'').toLowerCase();
+         if(role!=='admin'){
+           await Parse.User.logOut();
+           err.textContent='This account is not an Admin account.';
+           return;
+         }
+         session={role:'admin',name:pu.get('displayName')||'Admin',parseUserId:pu.id,authMode:'parse'};
+       }catch(e){
+         err.textContent='Incorrect Admin username or password.';
+         return;
+       }
      }else{
-       err.textContent='Incorrect Admin username or password.';
-       return;
+       // Never lock Admin out.
+       // Prefer a real Back4App session when available, otherwise use the
+       // original local Admin login as a safe fallback.
+       try{
+         const pu=await Parse.User.logIn('admin','123456');
+         const role=String(pu?.get('role')||'admin').toLowerCase();
+         if(role==='admin'){
+           session={role:'admin',name:pu.get('displayName')||'Admin',parseUserId:pu.id,authMode:'parse'};
+         }else{
+           await Parse.User.logOut();
+           session={role:'admin',name:'Admin',authMode:'local-admin'};
+         }
+       }catch(e){
+         console.warn('Back4App Admin login unavailable; using local Admin fallback.',e);
+         session={role:'admin',name:'Admin',authMode:'local-admin'};
+       }
      }
    }else{
-     // Teachers authenticate against real Back4App _User.
      if(!cloudReady){
        err.textContent='Cloud data is still loading. Please wait a moment.';
        return;
@@ -2607,7 +2691,7 @@ async function performLogin(){
      }
 
      const teacherId=String(parseUser.get('teacherId')||'');
-     const teacher=db.teachers.find(t=>t.id===teacherId) || getTeacherLogin(parseUser.getUsername());
+     const teacher=db.teachers.find(t=>t.id===teacherId)||getTeacherLogin(parseUser.getUsername());
 
      if(!teacher){
        await Parse.User.logOut();
@@ -2629,7 +2713,6 @@ async function performLogin(){
    showAppForSession(session);
    document.getElementById('loginPassword').value='';
 
-   // Teachers must change the temporary password immediately after login.
    if(session.role==='teacher'){
      const pu=Parse.User.current();
      const mustChange=(pu?.get('mustChangePassword')!==false);
@@ -2647,12 +2730,13 @@ async function performLogin(){
        },150);
      }
    }
-
  }catch(e){
    console.error('Login failed:',e);
    err.textContent=(e?.code===101)
-     ? 'Incorrect teacher username or password.'
+     ? 'Incorrect username or password.'
      : ('Login failed: '+String(e?.message||e));
+ }finally{
+   if(loginButton){loginButton.disabled=false;loginButton.textContent='LOGIN';}
  }
 }
 document.getElementById('firstPasswordSave').onclick=async()=>{
@@ -2734,21 +2818,40 @@ document.getElementById('addAnnouncementPageBtn')?.addEventListener('click',()=>
 document.getElementById('announcementSaveBtn')?.addEventListener('click',async()=>{
   if(currentSession()?.role!=='admin')return toast('Admin access only');
 
+  const saveBtn=document.getElementById('announcementSaveBtn');
+  if(saveBtn?.disabled)return;
+  const oldBtnText=saveBtn?.textContent||'Save Announcement';
+
   const title=announcementTitleInput.value.trim()||'Announcement';
   const message=announcementMessageInput.value.trim();
-  const attachmentLink=announcementLinkInput.value.trim();
+  let attachmentLink=announcementLinkInput.value.trim();
+  const fileInput=document.getElementById('announcementFileInput');
+  const uploadStatus=document.getElementById('announcementUploadStatus');
+  const selectedFile=fileInput?.files?.[0]||null;
   if(!message)return toast('Please enter announcement');
 
   try{
+    if(saveBtn){saveBtn.disabled=true;saveBtn.textContent=selectedFile?'Uploading...':'Saving...';}
     setCloudStatus('syncing','Saving');
+    if(selectedFile){
+      if(uploadStatus)uploadStatus.textContent='Uploading file to Back4App...';
+      attachmentLink=await uploadAnnouncementFile(selectedFile);
+      announcementLinkInput.value=attachmentLink;
+      if(uploadStatus)uploadStatus.textContent='Upload complete ✓';
+    }else if(/^file:\/\//i.test(attachmentLink)){
+      throw new Error('Local file paths cannot be shared. Please use Upload Picture / File.');
+    }
     await saveAnnouncementToCloud(title,message,attachmentLink);
     closeModal('announcementModal');
     setCloudStatus('online','Online','Announcement saved');
     toast('Announcement saved successfully');
   }catch(err){
     console.error('Announcement save failed:',err);
+    if(uploadStatus)uploadStatus.textContent='Upload failed: '+String(err?.message||err);
     setCloudStatus('online','Online',String(err?.message||err));
     toast('Announcement save failed: '+String(err?.message||err));
+  }finally{
+    if(saveBtn){saveBtn.disabled=false;saveBtn.textContent=oldBtnText;}
   }
 });
 
