@@ -1261,6 +1261,100 @@ html.dark-mode .announcement-card{background:linear-gradient(135deg,rgba(113,57,
 html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announcement-message{color:#e8c7ff}
 @media(max-width:760px){.announcement-card{grid-template-columns:1fr;padding:15px}.announcement-icon{width:46px;height:46px}.announcement-title-row{flex-direction:column;align-items:stretch}.announcement-title-row .btn{width:100%}}
 
+
+/* ===== V52 Announcement Manager + Pagination ===== */
+.announcement-footer{
+  margin-top:10px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.announcement-pager{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex:0 0 auto;
+}
+.announcement-page-btn{
+  width:32px;
+  height:32px;
+  border-radius:10px;
+  border:1px solid var(--line);
+  background:rgba(255,255,255,.04);
+  color:inherit;
+  cursor:pointer;
+  font-weight:900;
+}
+.announcement-page-btn:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+.announcement-manager-card{
+  min-height:420px;
+}
+.announcement-list{
+  display:grid;
+  gap:10px;
+  margin-top:14px;
+}
+.announcement-list-item{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto;
+  gap:14px;
+  align-items:start;
+  padding:15px 16px;
+  border:1px solid var(--line);
+  border-radius:15px;
+  background:rgba(255,255,255,.03);
+}
+.announcement-list-item h4{
+  margin:0 0 6px;
+  font-size:14px;
+}
+.announcement-list-item .announcement-list-message{
+  white-space:pre-wrap;
+  line-height:1.55;
+  font-size:11px;
+}
+.announcement-list-item .announcement-list-meta{
+  margin-top:8px;
+  color:var(--muted);
+  font-size:9px;
+}
+.announcement-list-actions{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.announcement-list-pager{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  margin-top:18px;
+}
+html.dark-mode .announcement-list-item{
+  background:rgba(112,52,135,.18);
+}
+@media(max-width:760px){
+  .announcement-footer{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+  .announcement-list-item{
+    grid-template-columns:1fr;
+  }
+  .announcement-list-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    width:100%;
+  }
+  .announcement-list-actions .btn{
+    width:100%;
+  }
+}
+
 </style>
 <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
 </head>
@@ -1301,6 +1395,7 @@ html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announce
       <button data-page="attendance"><span class="ico">✓</span> Attendance</button>
       <button data-page="people"><span class="ico">👥</span> Teacher & Course</button>
       <button data-page="calendar"><span class="ico">🗓</span> Makeup Calendar</button>
+      <button data-page="announcements"><span class="ico">📢</span> Announcement</button>
     </nav>
     <div class="side-bottom"><b>老师们辛苦啦 ❤️</b><br/>一个人的力量有限，但一群愿意彼此支持、共同成长的人，就能创造无限的可能。</div>
   </aside>
@@ -1309,7 +1404,7 @@ html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announce
     <header class="topbar">
       <div class="topbar-left"><button class="mobile-menu" id="menuBtn">☰</button><div><h1 id="topTitle">Dashboard</h1><small>WELCOME BACK DEAR TEACHERS</small></div></div>
       <div class="topbar-center"><div class="today" id="todayText"></div></div>
-      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V50 Announcement"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
+      <div class="topbar-right"><div class="user-box"><button class="cloud-status connecting" id="cloudStatus" type="button" title="Back4App · V52 Announcement Manager Login Fixed"><span id="cloudStatusIcon">☁️</span><span id="cloudStatusText">Connecting</span></button><button class="theme-toggle" id="themeToggle" type="button" aria-label="Switch to dark mode" title="Dark / Light Mode"><span class="theme-icon" id="themeIcon">🌙</span></button><div class="user-avatar" id="userAvatar">A</div><button class="logout-btn" id="logoutBtn" type="button">Logout</button></div></div>
     </header>
     <div class="content">
       <section class="page active" id="dashboard">
@@ -1328,10 +1423,17 @@ html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announce
         <div class="announcement-kicker">ANNOUNCEMENT</div>
         <h3 id="announcementTitle">Announcement</h3>
       </div>
-      <button class="btn soft small" id="editAnnouncementBtn" type="button">Edit Announcement</button>
+      <button class="btn soft small" id="editAnnouncementBtn" type="button">Manage Announcements</button>
     </div>
     <div class="announcement-message" id="announcementMessage">No announcement yet.</div>
-    <div class="announcement-meta" id="announcementMeta"></div>
+    <div class="announcement-footer">
+      <div class="announcement-meta" id="announcementMeta"></div>
+      <div class="announcement-pager" id="announcementPager">
+        <button type="button" class="announcement-page-btn" id="announcementPrev">‹</button>
+        <span id="announcementPageText">0 / 0</span>
+        <button type="button" class="announcement-page-btn" id="announcementNext">›</button>
+      </div>
+    </div>
   </div>
 </div>
 <div class="grid dashboard-grid">
@@ -1340,7 +1442,34 @@ html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announce
         </div>
       </section>
 
-      <section class="page" id="attendance">
+      <section class="page" id="announcements">
+  <div class="page-head">
+    <div>
+      <h2>Announcement</h2>
+      <div class="muted">新增、编辑和管理 Dashboard 公告。老师账号只能查看公告。</div>
+    </div>
+    <button class="btn primary" id="addAnnouncementPageBtn" type="button">+ Add Announcement</button>
+  </div>
+
+  <div class="card section-card announcement-manager-card">
+    <div class="section-title">
+      <div>
+        <h3>All Announcements</h3>
+        <span class="count" id="announcementCount">0 announcements</span>
+      </div>
+    </div>
+
+    <div id="announcementList" class="announcement-list"></div>
+
+    <div class="announcement-list-pager">
+      <button class="btn soft small" id="announcementListPrev" type="button">‹ Previous</button>
+      <span id="announcementListPageText">Page 1 / 1</span>
+      <button class="btn soft small" id="announcementListNext" type="button">Next ›</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="attendance">
         <div class="page-head"><div><h2>Attendance</h2><div class="muted">Admin 默认显示全部老师；如需筛选，可选择老师，再从对应科目进入 Take Attendance。</div></div></div>
         <div class="card attendance-card">
           <div class="attendance-meta" style="grid-template-columns:1fr 1fr">
@@ -1391,7 +1520,7 @@ html.dark-mode .announcement-title-row h3{color:#ffd36f}html.dark-mode .announce
 
 <div class="modal" id="announcementModal">
   <div class="modal-card" style="max-width:650px">
-    <h3>Edit Announcement</h3>
+    <h3 id="announcementModalTitle">Add Announcement</h3>
     <div class="form-grid">
       <div class="field full"><label>Title</label><input id="announcementTitleInput" placeholder="e.g. Important Notice"></div>
       <div class="field full"><label>Announcement</label><textarea id="announcementMessageInput" rows="7" placeholder="Write announcement here..."></textarea></div>
@@ -1930,51 +2059,190 @@ function formatCloudSaveError(kind,err){
 
 
 
-let currentAnnouncement=null;
+
+let announcements=[];
+let dashboardAnnouncementIndex=0;
+let announcementListPage=1;
+let editingAnnouncementObjectId=null;
+const ANNOUNCEMENTS_PER_PAGE=5;
+
+function announcementSortValue(a){
+  return String(a.updatedAt||a.createdAt||'');
+}
 
 function renderAnnouncement(){
   const session=currentSession();
-  const editBtn=document.getElementById('editAnnouncementBtn');
-  if(editBtn)editBtn.style.display=session?.role==='admin'?'inline-flex':'none';
+  const manageBtn=document.getElementById('editAnnouncementBtn');
+  const addBtn=document.getElementById('addAnnouncementPageBtn');
+
+  if(manageBtn)manageBtn.style.display=session?.role==='admin'?'inline-flex':'none';
+  if(addBtn)addBtn.style.display=session?.role==='admin'?'inline-flex':'none';
+
   const title=document.getElementById('announcementTitle');
   const msg=document.getElementById('announcementMessage');
   const meta=document.getElementById('announcementMeta');
-  if(!currentAnnouncement){
+  const pager=document.getElementById('announcementPager');
+  const pageText=document.getElementById('announcementPageText');
+  const prev=document.getElementById('announcementPrev');
+  const next=document.getElementById('announcementNext');
+
+  if(!announcements.length){
+    dashboardAnnouncementIndex=0;
     if(title)title.textContent='Announcement';
     if(msg)msg.textContent='No announcement yet.';
     if(meta)meta.textContent='';
+    if(pageText)pageText.textContent='0 / 0';
+    if(prev)prev.disabled=true;
+    if(next)next.disabled=true;
+    if(pager)pager.style.display='flex';
+    renderAnnouncementManager();
     return;
   }
-  if(title)title.textContent=currentAnnouncement.title||'Announcement';
-  if(msg)msg.textContent=currentAnnouncement.message||'';
+
+  if(dashboardAnnouncementIndex>=announcements.length)dashboardAnnouncementIndex=announcements.length-1;
+  if(dashboardAnnouncementIndex<0)dashboardAnnouncementIndex=0;
+
+  const item=announcements[dashboardAnnouncementIndex];
+  if(title)title.textContent=item.title||'Announcement';
+  if(msg)msg.textContent=item.message||'';
   if(meta){
-    const updated=currentAnnouncement.updatedAt?new Date(currentAnnouncement.updatedAt).toLocaleString():'';
+    const updated=item.updatedAt?new Date(item.updatedAt).toLocaleString():'';
     meta.textContent=updated?`Last updated: ${updated}`:'';
   }
+  if(pageText)pageText.textContent=`${dashboardAnnouncementIndex+1} / ${announcements.length}`;
+  if(prev)prev.disabled=dashboardAnnouncementIndex<=0;
+  if(next)next.disabled=dashboardAnnouncementIndex>=announcements.length-1;
+  if(pager)pager.style.display='flex';
+
+  renderAnnouncementManager();
+}
+
+function renderAnnouncementManager(){
+  const list=document.getElementById('announcementList');
+  const count=document.getElementById('announcementCount');
+  const pageText=document.getElementById('announcementListPageText');
+  const prev=document.getElementById('announcementListPrev');
+  const next=document.getElementById('announcementListNext');
+  if(!list)return;
+
+  if(count)count.textContent=`${announcements.length} announcement${announcements.length===1?'':'s'}`;
+
+  const totalPages=Math.max(1,Math.ceil(announcements.length/ANNOUNCEMENTS_PER_PAGE));
+  if(announcementListPage>totalPages)announcementListPage=totalPages;
+  if(announcementListPage<1)announcementListPage=1;
+
+  const start=(announcementListPage-1)*ANNOUNCEMENTS_PER_PAGE;
+  const items=announcements.slice(start,start+ANNOUNCEMENTS_PER_PAGE);
+
+  list.innerHTML=items.length?items.map(a=>`
+    <div class="announcement-list-item">
+      <div>
+        <h4>${esc(a.title||'Announcement')}</h4>
+        <div class="announcement-list-message">${esc(a.message||'')}</div>
+        <div class="announcement-list-meta">${a.updatedAt?`Updated: ${esc(new Date(a.updatedAt).toLocaleString())}`:''}</div>
+      </div>
+      ${currentSession()?.role==='admin'?`
+        <div class="announcement-list-actions">
+          <button class="btn soft small" onclick="openAnnouncementModal('${a.objectId}')">Edit</button>
+          <button class="btn danger small" onclick="deleteAnnouncement('${a.objectId}')">Delete</button>
+        </div>`:''}
+    </div>
+  `).join(''):'<div class="empty">No announcements yet.</div>';
+
+  if(pageText)pageText.textContent=`Page ${announcementListPage} / ${totalPages}`;
+  if(prev)prev.disabled=announcementListPage<=1;
+  if(next)next.disabled=announcementListPage>=totalPages;
 }
 
 async function loadAnnouncementFromCloud(){
   try{
     const rows=await restQueryClass(B4A_CLASSES.announcements);
-    const active=rows.filter(r=>!r.isSchemaMarker).sort((a,b)=>String(b.updatedAt||b.createdAt||'').localeCompare(String(a.updatedAt||a.createdAt||'')))[0]||null;
-    currentAnnouncement=active?{objectId:active.objectId,title:active.title||'Announcement',message:active.message||'',updatedAt:active.updatedAt||active.createdAt||''}:null;
+    announcements=rows
+      .filter(r=>!r.isSchemaMarker)
+      .map(r=>({
+        objectId:r.objectId,
+        title:r.title||'Announcement',
+        message:r.message||'',
+        createdAt:r.createdAt||'',
+        updatedAt:r.updatedAt||r.createdAt||''
+      }))
+      .sort((a,b)=>announcementSortValue(b).localeCompare(announcementSortValue(a)));
   }catch(err){
     console.warn('Announcement cloud read:',err);
-    currentAnnouncement=null;
+    announcements=[];
   }
+  dashboardAnnouncementIndex=0;
   renderAnnouncement();
+}
+
+function openAnnouncementModal(objectId=null){
+  if(currentSession()?.role!=='admin')return toast('Admin access only');
+
+  editingAnnouncementObjectId=objectId;
+  const item=announcements.find(a=>a.objectId===objectId);
+
+  announcementModalTitle.textContent=objectId?'Edit Announcement':'Add Announcement';
+  announcementTitleInput.value=item?.title||'';
+  announcementMessageInput.value=item?.message||'';
+  announcementModal.classList.add('show');
 }
 
 async function saveAnnouncementToCloud(title,message){
   const payload={title,message};
-  if(currentAnnouncement?.objectId){
-    const res=await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.announcements)}/${currentAnnouncement.objectId}`,{method:'PUT',body:JSON.stringify(payload)});
-    currentAnnouncement={objectId:currentAnnouncement.objectId,title,message,updatedAt:res.updatedAt||new Date().toISOString()};
+
+  if(editingAnnouncementObjectId){
+    const res=await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.announcements)}/${editingAnnouncementObjectId}`,{
+      method:'PUT',
+      body:JSON.stringify(payload)
+    });
+
+    const item=announcements.find(a=>a.objectId===editingAnnouncementObjectId);
+    if(item){
+      item.title=title;
+      item.message=message;
+      item.updatedAt=res.updatedAt||new Date().toISOString();
+    }
   }else{
-    const res=await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.announcements)}`,{method:'POST',body:JSON.stringify(payload)});
-    currentAnnouncement={objectId:res.objectId,title,message,updatedAt:res.createdAt||new Date().toISOString()};
+    const res=await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.announcements)}`,{
+      method:'POST',
+      body:JSON.stringify(payload)
+    });
+
+    announcements.unshift({
+      objectId:res.objectId,
+      title,
+      message,
+      createdAt:res.createdAt||new Date().toISOString(),
+      updatedAt:res.createdAt||new Date().toISOString()
+    });
   }
+
+  announcements.sort((a,b)=>announcementSortValue(b).localeCompare(announcementSortValue(a)));
+  dashboardAnnouncementIndex=0;
+  announcementListPage=1;
+  editingAnnouncementObjectId=null;
   renderAnnouncement();
+}
+
+async function deleteAnnouncement(objectId){
+  if(currentSession()?.role!=='admin')return toast('Admin access only');
+  const item=announcements.find(a=>a.objectId===objectId);
+  if(!item)return;
+  if(!confirm(`Delete "${item.title||'Announcement'}"?`))return;
+
+  try{
+    setCloudStatus('syncing','Deleting');
+    await b4aRest(`classes/${encodeURIComponent(B4A_CLASSES.announcements)}/${objectId}`,{method:'DELETE'});
+    announcements=announcements.filter(a=>a.objectId!==objectId);
+    dashboardAnnouncementIndex=Math.min(dashboardAnnouncementIndex,Math.max(0,announcements.length-1));
+    renderAnnouncement();
+    setCloudStatus('online','Online','Announcement deleted');
+    toast('Announcement deleted');
+  }catch(err){
+    console.error('Announcement delete failed:',err);
+    setCloudStatus('online','Online',String(err?.message||err));
+    toast('Announcement delete failed');
+  }
 }
 
 async function bootstrapBack4App(){
@@ -2227,16 +2495,18 @@ document.getElementById('mStudentInput')?.addEventListener('keydown',e=>{
 
 document.getElementById('editAnnouncementBtn')?.addEventListener('click',()=>{
   if(currentSession()?.role!=='admin')return toast('Admin access only');
-  announcementTitleInput.value=currentAnnouncement?.title||'';
-  announcementMessageInput.value=currentAnnouncement?.message||'';
-  announcementModal.classList.add('show');
+  showPage('announcements');
 });
+
+document.getElementById('addAnnouncementPageBtn')?.addEventListener('click',()=>openAnnouncementModal());
 
 document.getElementById('announcementSaveBtn')?.addEventListener('click',async()=>{
   if(currentSession()?.role!=='admin')return toast('Admin access only');
+
   const title=announcementTitleInput.value.trim()||'Announcement';
   const message=announcementMessageInput.value.trim();
   if(!message)return toast('Please enter announcement');
+
   try{
     setCloudStatus('syncing','Saving');
     await saveAnnouncementToCloud(title,message);
@@ -2247,6 +2517,32 @@ document.getElementById('announcementSaveBtn')?.addEventListener('click',async()
     console.error('Announcement save failed:',err);
     setCloudStatus('online','Online',String(err?.message||err));
     toast('Announcement save failed: '+String(err?.message||err));
+  }
+});
+
+document.getElementById('announcementPrev')?.addEventListener('click',()=>{
+  if(dashboardAnnouncementIndex>0){
+    dashboardAnnouncementIndex--;
+    renderAnnouncement();
+  }
+});
+document.getElementById('announcementNext')?.addEventListener('click',()=>{
+  if(dashboardAnnouncementIndex<announcements.length-1){
+    dashboardAnnouncementIndex++;
+    renderAnnouncement();
+  }
+});
+document.getElementById('announcementListPrev')?.addEventListener('click',()=>{
+  if(announcementListPage>1){
+    announcementListPage--;
+    renderAnnouncementManager();
+  }
+});
+document.getElementById('announcementListNext')?.addEventListener('click',()=>{
+  const totalPages=Math.max(1,Math.ceil(announcements.length/ANNOUNCEMENTS_PER_PAGE));
+  if(announcementListPage<totalPages){
+    announcementListPage++;
+    renderAnnouncementManager();
   }
 });
 
@@ -2895,7 +3191,7 @@ deleteMakeupBtn.onclick=async()=>{
 function renderCalendar(){const session=currentSession(),y=calCursor.getFullYear(),m=calCursor.getMonth();monthTitle.textContent=calCursor.toLocaleString('en-US',{month:'long',year:'numeric'});const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());let html='';for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d),out=d.getMonth()!==m;const events=db.makeups.filter(x=>x.date===ds&&(!(session?.role==='teacher'&&session.teacherId)||x.teacherId===session.teacherId));html+=`<div class="day ${out?'out':''}" ondblclick="openMakeupModal(null,'${ds}')"><div class="num">${d.getDate()}</div>${events.map(e=>`<div class="makeup-event ${e.status==='done'?'done':''}" onclick="event.stopPropagation();openMakeupModal('${e.id}')"><strong>${esc(teacherName(e.teacherId))}</strong><span>${esc(e.time||'')} · ${esc((e.studentNames&&e.studentNames.length)?e.studentNames.join(', '):studentName(e.studentId))}</span><br><span>${esc(e.subject||'Makeup')}</span></div>`).join('')}</div>`}calendarGrid.innerHTML=html}
 prevMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};nextMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};goToday.onclick=()=>{calCursor=new Date();renderCalendar()};
 function renderDashboard(){const session=currentSession(),teacher=session?.role==='teacher',tid=session?.teacherId;const visibleTeachers=teacher?db.teachers.filter(t=>t.id===tid):db.teachers,visibleStudents=teacher?db.students.filter(s=>s.teacherId===tid):db.students,visibleAttendance=teacher?db.attendance.filter(a=>a.teacherId===tid):db.attendance,visibleMakeups=teacher?db.makeups.filter(m=>m.teacherId===tid):db.makeups;statTeachers.textContent=visibleTeachers.length;statStudents.textContent=uniqueAssignedStudentCount(teacher?tid:null);const a=visibleAttendance.filter(x=>x.date===today);let p=0;a.forEach(x=>Object.values(x.records||{}).forEach(v=>{if(v==='present')p++}));statPresent.textContent=p;const upcoming=visibleMakeups.filter(m=>m.date>=today&&m.status!=='cancelled').sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));statMakeups.textContent=upcoming.length;dashAttendance.innerHTML=a.length?a.map(x=>`<div class="quick-row"><div><b>${esc(teacherName(x.teacherId))}</b><div class="muted">${esc(x.className||'Attendance saved')}</div></div><span class="pill">${Object.keys(x.records||{}).length} students</span></div>`).join(''):`<div class="empty">No attendance saved for today.</div>`;dashMakeups.innerHTML=upcoming.length?upcoming.slice(0,5).map(m=>`<div class="quick-row"><div><b>${esc(studentName(m.studentId))}</b><div class="muted">${esc(m.date)} ${esc(m.time||'')} · ${esc(teacherName(m.teacherId))}</div></div><span class="pill">${esc(m.subject||'Makeup')}</span></div>`).join(''):`<div class="empty">No upcoming makeup classes.</div>`}
-function renderAll(){populateSelects();renderPeople();renderAttendance();renderCalendar();renderDashboard();applyRoleUI()renderAnnouncement();}
+function renderAll(){populateSelects();renderPeople();renderAttendance();renderCalendar();renderDashboard();applyRoleUI();renderAnnouncement();}
 renderAll();restoreSession();bootstrapBack4App();
 for(const modal of document.querySelectorAll('.modal'))modal.addEventListener('mousedown',e=>{if(e.target===modal&&modal.id!=='firstPasswordModal')modal.classList.remove('show')});
 
