@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>SFE Teacher Attendance System</title>
+<title>STARBRIGHT FUTURE · Teacher Attendance System</title>
 <style>
 :root{
   --bg:#f7f4fb;--panel:#fff;--ink:#3d3159;--muted:#8b7fa4;--purple:#7d5ac7;--purple2:#b991f3;
@@ -92,6 +92,29 @@ html.dark-mode .status-btn.late.active{background:#3d3017;color:#f2c86c;border-c
 html.dark-mode .status-btn.absent.active{background:#3b1e29;color:#ff95a6;border-color:#663343}
 html.dark-mode .toast{background:#4c3768;color:#fff}
 
+
+
+/* ===== V75 Teacher Schedule (additive; existing system preserved) ===== */
+.teacher-schedule-head{align-items:center}
+.teacher-schedule-actions{display:flex;gap:10px;flex-wrap:wrap}
+.teacher-schedule-toolbar{align-items:center}
+.teacher-schedule-toolbar input{flex:1 1 260px}
+.teacher-schedule-toolbar select{flex:0 1 240px}
+.teacher-schedule-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.ts-card{overflow:hidden;border:1px solid var(--line);border-radius:17px;background:var(--panel);box-shadow:0 8px 22px rgba(80,56,120,.07)}
+.ts-head{padding:16px 17px 13px;background:linear-gradient(135deg,#fff4fb,#f5efff);border-bottom:1px solid var(--line)}
+.ts-head h3{margin:0 0 5px;font-size:17px}.ts-head .muted{font-size:11px}
+.ts-body{padding:12px}.ts-day{margin-bottom:10px}.ts-day:last-child{margin-bottom:0}
+.ts-day-title{display:flex;justify-content:space-between;align-items:center;padding:6px 8px;margin-bottom:6px;border-radius:9px;background:#f7f1fd;color:var(--purple);font-size:11px;font-weight:900}
+.ts-course{border:1px solid var(--line);border-radius:11px;padding:9px 10px;margin-bottom:6px;background:#fff}
+.ts-course:last-child{margin-bottom:0}.ts-course-top{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}.ts-course b{font-size:12px}.ts-time{font-size:10px;font-weight:800;color:var(--purple);white-space:nowrap}.ts-students{margin-top:4px;font-size:10px;color:var(--muted)}
+.ts-course-actions{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}.ts-course-actions .btn{padding:5px 8px;font-size:9px}
+html.dark-mode .ts-card{background:var(--panel);border-color:var(--line)}
+html.dark-mode .ts-head{background:linear-gradient(135deg,#2c1e3d,#251a39)}
+html.dark-mode .ts-day-title{background:#2d2142;color:#d1adff}
+html.dark-mode .ts-course{background:#181122;border-color:var(--line)}
+@media(max-width:1200px){.teacher-schedule-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.teacher-schedule-grid{grid-template-columns:1fr}.teacher-schedule-actions{width:100%}.teacher-schedule-actions .btn{flex:1}.teacher-schedule-toolbar input,.teacher-schedule-toolbar select{width:100%;flex-basis:100%}}
 
 /* ===== Login Page ===== */
 .login-screen{position:fixed;inset:0;z-index:500;background:
@@ -1529,7 +1552,8 @@ html.dark-mode .announcement-list-item{
   object-fit:contain!important;object-position:center!important;
   display:block!important;transform:none!important;margin:0!important;
 }
-</style></head>
+</style><!-- STARBRIGHT V77: FULL SYSTEM + ADMIN-ONLY TEACHER MANAGEMENT/SCHEDULE -->
+</head>
 <body>
 
 <div class="login-screen" id="loginScreen">
@@ -1566,6 +1590,7 @@ html.dark-mode .announcement-list-item{
       <button class="active" data-page="dashboard"><span class="ico">⌂</span> Dashboard</button>
       <button data-page="attendance"><span class="ico">✓</span> Attendance</button>
       <button data-page="people"><span class="ico">👥</span> Teacher & Course</button>
+      <button data-page="teacherSchedule"><span class="ico">▦</span> Teacher Schedule</button>
       <button data-page="calendar"><span class="ico">🗓</span> Makeup Calendar</button>
       <button data-page="announcements"><span class="ico">📢</span> Announcement</button>
     </nav>
@@ -1681,6 +1706,23 @@ html.dark-mode .announcement-list-item{
 <button class="btn primary small" onclick="openTeacherModal()">+ Add Teacher</button>
 </div></div><div class="toolbar"><input id="teacherSearch" placeholder="Search teacher..."></div><div class="table-wrap"><table class="table"><thead><tr><th>Teacher</th><th>Course</th><th>Phone</th><th></th></tr></thead><tbody id="teacherBody"></tbody></table></div></div>
           <div class="card section-card"><div class="section-title"><div><h3>Courses</h3><span class="count" id="courseCount">0 courses</span></div><button class="btn primary small" onclick="openCourseModal()">+ Add Course</button></div><div class="toolbar"><input id="courseSearch" placeholder="Search course..."></div><div id="courseList" class="course-list"></div></div>
+        </div>
+      </section>
+
+      <section class="page" id="teacherSchedule">
+        <div class="page-head teacher-schedule-head">
+          <div><h2>Teacher Schedule</h2><div class="muted">按照老师查看每周课程时间。课程资料直接使用现有 Courses，不会影响原本 Teacher & Course 功能。</div></div>
+          <div class="teacher-schedule-actions admin-only-schedule">
+            <button class="btn soft" type="button" onclick="openTeacherModal()">+ Add Teacher</button>
+            <button class="btn primary" type="button" onclick="openCourseModal()">+ Add Schedule</button>
+          </div>
+        </div>
+        <div class="card section-card">
+          <div class="toolbar teacher-schedule-toolbar">
+            <input id="teacherScheduleSearch" type="search" placeholder="Search teacher / course...">
+            <select id="teacherScheduleFilter"><option value="">All Teachers</option></select>
+          </div>
+          <div id="teacherScheduleGrid" class="teacher-schedule-grid"></div>
         </div>
       </section>
 
@@ -2704,11 +2746,24 @@ function applyRoleUI(){
  const teacher=session?.role==='teacher';
  const teacherId=session?.teacherId;
  const teacherPage=document.querySelector('[data-page="people"]');
- // Teachers may view their own profile/student list, but cannot manage teacher/student records.
+ const teacherSchedulePage=document.querySelector('[data-page="teacherSchedule"]');
+ // Admin-only: teacher accounts must not see Teacher & Course or Teacher Schedule.
+ if(teacherPage)teacherPage.style.display=teacher?'none':'';
+ if(teacherSchedulePage)teacherSchedulePage.style.display=teacher?'none':'';
  document.querySelectorAll('button[onclick^="openTeacherModal"],button[onclick^="openStudentModal"]').forEach(b=>b.style.display=teacher?'none':'');
  const migrateBtn=document.getElementById('migrateUsersBtn');if(migrateBtn)migrateBtn.style.display=teacher?'none':'';
  const addMakeup=document.querySelector('#calendar .page-head > button');
  if(addMakeup)addMakeup.style.display='';
+ // Extra guard: a teacher session cannot stay on either Admin-only page.
+ if(teacher){
+   const forbiddenActive=document.querySelector('#people.page.active, #teacherSchedule.page.active');
+   if(forbiddenActive){
+     forbiddenActive.classList.remove('active');
+     document.getElementById('dashboard')?.classList.add('active');
+     document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page==='dashboard'));
+     const title=document.getElementById('topTitle');if(title)title.textContent='Dashboard';
+   }
+ }
  if(teacher && teacherId){
    const t=db.teachers.find(x=>x.id===teacherId);
    if(t)document.getElementById('userAvatar').textContent=(t.name||'T').replace(/^Ms\s*/i,'').charAt(0).toUpperCase();
@@ -3147,6 +3202,43 @@ function renderPeople(){
  document.getElementById('teacherBody').innerHTML=teachers.length?teachers.map(t=>{const names=db.courses.filter(c=>c.teacherId===t.id).map(c=>c.name).join(' / ');return `<tr><td><div style="display:flex;align-items:center;gap:9px"><div class="avatar">${esc(t.name.charAt(0))}</div><div><b>${esc(t.name)}</b><div class="muted">${esc(t.accountUsername||t.email||'')}</div></div></div></td><td>${esc(names||'-')}</td><td>${esc(t.phone||'-')}</td><td>${teacher?'':`<div class="teacher-actions"><button class="btn soft small" onclick="editTeacher('${t.id}')">Edit</button><button class="btn small reset-password-btn" onclick="openResetPassword('${t.id}')">Reset Password</button><button class="btn danger small teacher-delete-btn" onclick="deleteTeacher('${t.id}')">Delete</button></div>`}</td></tr>`}).join(''):`<tr><td colspan="4"><div class="empty">No teacher found.</div></td></tr>`;
  document.getElementById('courseList').innerHTML=visibleCourses.length?visibleCourses.map(c=>{const students=(c.studentIds||[]).map(id=>db.students.find(s=>s.id===id)).filter(Boolean);return `<div class="course-card" id="course-${c.id}"><div class="course-head" onclick="toggleCourse('${c.id}')"><div class="course-head-left"><span class="course-chevron">⌄</span><div><h4>${esc(c.name)}</h4><div class="muted">${esc(teacherName(c.teacherId))} · ${students.length} student${students.length===1?'':'s'}</div><div class="course-days">${(c.weekdays||[]).map(d=>`<span class="course-day-chip">${esc(d)}</span>`).join('')}</div>${courseTimeText(c)?`<div class="course-time-display">🕒 ${esc(courseTimeText(c))}</div>`:''}</div></div><div class="course-actions" onclick="event.stopPropagation()">${teacher?'':`<button class="btn primary small" onclick="openCourseStudentModal('${c.id}')">+ Add Student</button><button class="btn soft small" onclick="openCourseModal('${c.id}')">Edit</button><button class="btn danger small course-delete-btn" onclick="deleteCourse('${c.id}')">Delete</button>`}</div></div><div class="course-students">${students.length?students.map(st=>`<div class="course-student-row"><div><b>${esc(st.name)}</b><div class="muted">${esc(st.year||'')}</div></div>${teacher?'':`<button class="btn soft small" onclick="removeStudentFromCourse('${c.id}','${st.id}')">Remove</button>`}</div>`).join(''):'<div class="empty">No students in this course yet.</div>'}</div></div>`}).join(''):'<div class="empty">No courses found.</div>';
 }
+
+function renderTeacherSchedule(){
+ const grid=document.getElementById('teacherScheduleGrid');
+ const search=document.getElementById('teacherScheduleSearch');
+ const filter=document.getElementById('teacherScheduleFilter');
+ if(!grid||!search||!filter)return;
+ const session=currentSession();
+ const teacherMode=session?.role==='teacher';
+ const ownTeacherId=session?.teacherId||'';
+ const previous=filter.value;
+ const allowedTeachers=teacherMode?db.teachers.filter(t=>t.id===ownTeacherId):db.teachers;
+ filter.innerHTML=(teacherMode?'':'<option value="">All Teachers</option>')+allowedTeachers.map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
+ if(teacherMode){filter.value=ownTeacherId;filter.disabled=true}else{filter.disabled=false;if([...filter.options].some(o=>o.value===previous))filter.value=previous}
+ const q=(search.value||'').trim().toLowerCase();
+ const selected=filter.value;
+ const dayOrder=['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+ const dayIndex=d=>{const i=dayOrder.indexOf(d);return i<0?99:i};
+ let teachers=allowedTeachers.filter(t=>!selected||t.id===selected).filter(t=>{
+   const courses=db.courses.filter(c=>c.teacherId===t.id);
+   return !q||(t.name+' '+(t.subject||'')+' '+courses.map(c=>c.name).join(' ')).toLowerCase().includes(q);
+ });
+ grid.innerHTML=teachers.length?teachers.map(t=>{
+   const courses=db.courses.filter(c=>c.teacherId===t.id);
+   const days=[...new Set(courses.flatMap(c=>Array.isArray(c.weekdays)?c.weekdays:[]))].sort((a,b)=>dayIndex(a)-dayIndex(b));
+   const dayHtml=days.length?days.map(day=>{
+     const list=courses.filter(c=>(c.weekdays||[]).includes(day)).sort((a,b)=>(a.startTime||'').localeCompare(b.startTime||''));
+     return `<div class="ts-day"><div class="ts-day-title"><span>${esc(day)}</span><span>${list.length} class${list.length===1?'':'es'}</span></div>${list.map(c=>{
+       const students=(c.studentIds||[]).map(id=>db.students.find(s=>s.id===id)).filter(Boolean);
+       return `<div class="ts-course"><div class="ts-course-top"><b>${esc(c.name||'Course')}</b><span class="ts-time">${esc(courseTimeText(c)||'Time not set')}</span></div><div class="ts-students">${students.length?esc(students.map(x=>x.name).join(', ')):'No students yet'}</div>${teacherMode?'':`<div class="ts-course-actions"><button class="btn soft small" onclick="openCourseModal('${c.id}')">Edit</button><button class="btn primary small" onclick="openCourseStudentModal('${c.id}')">+ Student</button><button class="btn danger small" onclick="deleteCourse('${c.id}')">Delete</button></div>`}</div>`;
+     }).join('')}</div>`;
+   }).join(''):'<div class="empty">No schedule added yet.</div>';
+   return `<div class="ts-card"><div class="ts-head"><h3>${esc(t.name)}</h3><div class="muted">${esc(t.accountUsername||t.email||'Teacher')} · ${courses.length} course${courses.length===1?'':'s'}</div></div><div class="ts-body">${dayHtml}</div></div>`;
+ }).join(''):'<div class="empty" style="grid-column:1/-1">No teacher schedule found.</div>';
+ const actions=document.querySelector('.admin-only-schedule');
+ if(actions)actions.style.display=teacherMode?'none':'flex';
+}
+
 function toggleCourse(id){document.getElementById('course-'+id)?.classList.toggle('open')}
 
 async function saveCourseDirectToCloud(course){
@@ -3533,6 +3625,10 @@ function openStudentModal(id=null){if(isTeacher())return toast('Admin access onl
 function editStudent(id){openStudentModal(id)}
 document.getElementById('studentSaveBtn').onclick=()=>{if(isTeacher())return toast('Admin access only');const name=sName.value.trim();if(!name)return toast('Please enter student name');const data={name,year:sYear.value.trim(),teacherId:sTeacher.value,phone:sPhone.value.trim()};if(editingStudent)Object.assign(db.students.find(s=>s.id===editingStudent),data);else db.students.push({id:uid('s'),...data});closeModal('studentModal');save();toast('Student saved')};
 teacherSearch.oninput=renderPeople;courseSearch.oninput=renderPeople;
+const teacherScheduleSearch=document.getElementById('teacherScheduleSearch');
+const teacherScheduleFilter=document.getElementById('teacherScheduleFilter');
+if(teacherScheduleSearch)teacherScheduleSearch.oninput=renderTeacherSchedule;
+if(teacherScheduleFilter)teacherScheduleFilter.onchange=renderTeacherSchedule;
 let activeAttendanceSubject='',activeAttendanceTeacherId='';
 function teacherSubjects(teacher){return db.courses.filter(c=>c.teacherId===teacher?.id).map(c=>c.name)}
 function renderAttendance(){
@@ -3706,7 +3802,7 @@ deleteMakeupBtn.onclick=async()=>{
 function renderCalendar(){const session=currentSession(),y=calCursor.getFullYear(),m=calCursor.getMonth();monthTitle.textContent=calCursor.toLocaleString('en-US',{month:'long',year:'numeric'});const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());let html='';for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d),out=d.getMonth()!==m;const events=db.makeups.filter(x=>x.date===ds&&(!(session?.role==='teacher'&&session.teacherId)||x.teacherId===session.teacherId));html+=`<div class="day ${out?'out':''}" ondblclick="openMakeupModal(null,'${ds}')"><div class="num">${d.getDate()}</div>${events.map(e=>`<div class="makeup-event ${e.status==='done'?'done':''}" onclick="event.stopPropagation();openMakeupModal('${e.id}')"><strong>${esc(teacherName(e.teacherId))}</strong><span>${esc(e.time||'')} · ${esc((e.studentNames&&e.studentNames.length)?e.studentNames.join(', '):studentName(e.studentId))}</span><br><span>${esc(e.subject||'Makeup')}</span></div>`).join('')}</div>`}calendarGrid.innerHTML=html}
 prevMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};nextMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};goToday.onclick=()=>{calCursor=new Date();renderCalendar()};
 function renderDashboard(){const session=currentSession(),teacher=session?.role==='teacher',tid=session?.teacherId;const visibleTeachers=teacher?db.teachers.filter(t=>t.id===tid):db.teachers,visibleStudents=teacher?db.students.filter(s=>s.teacherId===tid):db.students,visibleAttendance=teacher?db.attendance.filter(a=>a.teacherId===tid):db.attendance,visibleMakeups=teacher?db.makeups.filter(m=>m.teacherId===tid):db.makeups;statTeachers.textContent=visibleTeachers.length;statStudents.textContent=uniqueAssignedStudentCount(teacher?tid:null);const a=visibleAttendance.filter(x=>x.date===today);let p=0;a.forEach(x=>Object.values(x.records||{}).forEach(v=>{if(v==='present')p++}));statPresent.textContent=p;const upcoming=visibleMakeups.filter(m=>m.date>=today&&m.status!=='cancelled').sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));statMakeups.textContent=upcoming.length;dashAttendance.innerHTML=a.length?a.map(x=>`<div class="quick-row"><div><b>${esc(teacherName(x.teacherId))}</b><div class="muted">${esc(x.className||'Attendance saved')}</div></div><span class="pill">${Object.keys(x.records||{}).length} students</span></div>`).join(''):`<div class="empty">No attendance saved for today.</div>`;dashMakeups.innerHTML=upcoming.length?upcoming.slice(0,5).map(m=>`<div class="quick-row"><div><b>${esc(studentName(m.studentId))}</b><div class="muted">${esc(m.date)} ${esc(m.time||'')} · ${esc(teacherName(m.teacherId))}</div></div><span class="pill">${esc(m.subject||'Makeup')}</span></div>`).join(''):`<div class="empty">No upcoming makeup classes.</div>`}
-function renderAll(){populateSelects();renderPeople();renderAttendance();renderCalendar();renderDashboard();applyRoleUI();renderAnnouncement();}
+function renderAll(){populateSelects();renderPeople();renderTeacherSchedule();renderAttendance();renderCalendar();renderDashboard();applyRoleUI();renderAnnouncement();}
 renderAll();restoreSession();bootstrapBack4App();
 for(const modal of document.querySelectorAll('.modal'))modal.addEventListener('mousedown',e=>{if(e.target===modal&&modal.id!=='firstPasswordModal')modal.classList.remove('show')});
 
