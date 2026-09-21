@@ -1418,6 +1418,9 @@ html.dark-mode .announcement-list-item{
 #loginScreen .login-cloud.sfe-login-logo{background:transparent!important;box-shadow:none!important;overflow:hidden;padding:0!important;border-radius:50%!important;}
 #loginScreen .login-cloud.sfe-login-logo img{width:100%!important;height:100%!important;object-fit:contain!important;display:block!important;}
 
+
+/* ===== V78 Monthly Class Summary (Admin Only) ===== */
+.summary-toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:18px}.summary-toolbar .field{min-width:190px;flex:1}.summary-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:18px}.summary-stat{padding:18px;border-radius:16px;background:linear-gradient(135deg,#fbf7ff,#fff7fb);border:1px solid var(--line)}.summary-stat small{display:block;color:var(--muted);font-weight:700;margin-bottom:7px}.summary-stat strong{font-size:28px;color:var(--purple)}.summary-teacher{border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:14px;background:var(--panel)}.summary-teacher-head{padding:14px 16px;background:linear-gradient(135deg,#f4eaff,#fff0f7);display:flex;align-items:center;justify-content:space-between;gap:12px}.summary-teacher-head b{color:var(--purple);font-size:15px}.summary-course-row{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:13px 16px;border-top:1px solid var(--line)}.summary-course-row .course-name{font-weight:800}.summary-course-row .class-count{min-width:74px;text-align:center;padding:7px 11px;border-radius:999px;background:#f1e4ff;color:var(--purple);font-weight:900}.summary-total{font-size:12px;color:var(--muted)}html.dark-mode .summary-stat,html.dark-mode .summary-teacher{background:#21112f}html.dark-mode .summary-teacher-head{background:linear-gradient(135deg,#32184a,#402139)}html.dark-mode .summary-course-row .class-count{background:#4a2564;color:#f2c5ff}@media(max-width:700px){.summary-stats{grid-template-columns:1fr}.summary-course-row{grid-template-columns:1fr auto}}
 </style>
 <script src="https://unpkg.com/parse/dist/parse.min.js"></script>
 
@@ -1553,6 +1556,27 @@ html.dark-mode .announcement-list-item{
   display:block!important;transform:none!important;margin:0!important;
 }
 </style><!-- STARBRIGHT V77: FULL SYSTEM + ADMIN-ONLY TEACHER MANAGEMENT/SCHEDULE -->
+
+<style>
+/* =========================================================
+   V79 SIDEBAR CLOUD POSITION FIX 🔒
+   Only move cloud mascot lower.
+   All existing functions remain unchanged.
+   ========================================================= */
+.sidebar-cloud-mascot{
+  bottom:72px!important;
+}
+@media(max-height:760px){
+  .sidebar-cloud-mascot{
+    bottom:65px!important;
+  }
+}
+@media(max-width:760px){
+  .sidebar-cloud-mascot{
+    bottom:70px!important;
+  }
+}
+</style>
 </head>
 <body>
 
@@ -1589,6 +1613,7 @@ html.dark-mode .announcement-list-item{
     <nav class="nav" id="nav">
       <button class="active" data-page="dashboard"><span class="ico">⌂</span> Dashboard</button>
       <button data-page="attendance"><span class="ico">✓</span> Attendance</button>
+      <button data-page="monthlySummary"><span class="ico">📊</span> Monthly Class Summary</button>
       <button data-page="people"><span class="ico">👥</span> Teacher & Course</button>
       <button data-page="teacherSchedule"><span class="ico">▦</span> Teacher Schedule</button>
       <button data-page="calendar"><span class="ico">🗓</span> Makeup Calendar</button>
@@ -1695,6 +1720,24 @@ html.dark-mode .announcement-list-item{
             <div class="field"><label>Teacher</label><select id="attTeacher"></select></div>
           </div>
           <div class="att-list" id="attendanceList"></div>
+        </div>
+      </section>
+
+
+      <section class="page" id="monthlySummary">
+        <div class="page-head"><div><h2>Monthly Class Summary</h2><div class="muted">Admin Only · 根据已保存的 Attendance 自动统计每位老师每一科当月实际上课堂数。</div></div></div>
+        <div class="card section-card">
+          <div class="summary-toolbar">
+            <div class="field"><label>Month</label><input type="month" id="summaryMonth"></div>
+            <div class="field"><label>Teacher</label><select id="summaryTeacher"><option value="">All Teachers</option></select></div>
+            <div class="field"><label>Course</label><select id="summaryCourse"><option value="">All Courses</option></select></div>
+          </div>
+          <div class="summary-stats">
+            <div class="summary-stat"><small>Teachers with Classes</small><strong id="summaryTeacherCount">0</strong></div>
+            <div class="summary-stat"><small>Courses Taught</small><strong id="summaryCourseCount">0</strong></div>
+            <div class="summary-stat"><small>Total Classes</small><strong id="summaryClassCount">0</strong></div>
+          </div>
+          <div id="monthlySummaryList"></div>
         </div>
       </section>
 
@@ -2747,16 +2790,18 @@ function applyRoleUI(){
  const teacherId=session?.teacherId;
  const teacherPage=document.querySelector('[data-page="people"]');
  const teacherSchedulePage=document.querySelector('[data-page="teacherSchedule"]');
+ const monthlySummaryPage=document.querySelector('[data-page="monthlySummary"]');
  // Admin-only: teacher accounts must not see Teacher & Course or Teacher Schedule.
  if(teacherPage)teacherPage.style.display=teacher?'none':'';
  if(teacherSchedulePage)teacherSchedulePage.style.display=teacher?'none':'';
+ if(monthlySummaryPage)monthlySummaryPage.style.display=teacher?'none':'';
  document.querySelectorAll('button[onclick^="openTeacherModal"],button[onclick^="openStudentModal"]').forEach(b=>b.style.display=teacher?'none':'');
  const migrateBtn=document.getElementById('migrateUsersBtn');if(migrateBtn)migrateBtn.style.display=teacher?'none':'';
  const addMakeup=document.querySelector('#calendar .page-head > button');
  if(addMakeup)addMakeup.style.display='';
  // Extra guard: a teacher session cannot stay on either Admin-only page.
  if(teacher){
-   const forbiddenActive=document.querySelector('#people.page.active, #teacherSchedule.page.active');
+   const forbiddenActive=document.querySelector('#people.page.active, #teacherSchedule.page.active, #monthlySummary.page.active');
    if(forbiddenActive){
      forbiddenActive.classList.remove('active');
      document.getElementById('dashboard')?.classList.add('active');
@@ -3168,7 +3213,7 @@ document.addEventListener('click',()=>attCalendarPopover?.classList.remove('show
 
 const zhDays=['星期日','星期一','星期二','星期三','星期四','星期五','星期六'];
 const now=new Date();document.getElementById('todayText').textContent=`${zhDays[now.getDay()]} · ${String(now.getDate()).padStart(2,'0')}.${String(now.getMonth()+1).padStart(2,'0')}.${now.getFullYear()}`;
-document.querySelectorAll('#nav button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('#nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(btn.dataset.page).classList.add('active');document.getElementById('topTitle').textContent=btn.textContent.trim();document.getElementById('sidebar').classList.remove('show')});
+document.querySelectorAll('#nav button').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('#nav button').forEach(b=>b.classList.remove('active'));btn.classList.add('active');document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(btn.dataset.page).classList.add('active');if(btn.dataset.page==='monthlySummary')renderMonthlySummary();document.getElementById('topTitle').textContent=btn.textContent.trim();document.getElementById('sidebar').classList.remove('show')});
 document.getElementById('menuBtn').onclick=()=>document.getElementById('sidebar').classList.toggle('show');
 function populateSelects(){
  const session=currentSession(); const teacher=session?.role==='teacher'; const teacherId=session?.teacherId;
@@ -3629,6 +3674,38 @@ const teacherScheduleSearch=document.getElementById('teacherScheduleSearch');
 const teacherScheduleFilter=document.getElementById('teacherScheduleFilter');
 if(teacherScheduleSearch)teacherScheduleSearch.oninput=renderTeacherSchedule;
 if(teacherScheduleFilter)teacherScheduleFilter.onchange=renderTeacherSchedule;
+// ===== V78 Monthly Class Summary =====
+function initMonthlySummaryFilters(){
+ const m=document.getElementById('summaryMonth'),t=document.getElementById('summaryTeacher'),c=document.getElementById('summaryCourse');
+ if(!m||!t||!c)return;
+ if(!m.value)m.value=today.slice(0,7);
+ const tv=t.value,cv=c.value;
+ t.innerHTML='<option value="">All Teachers</option>'+db.teachers.slice().sort((a,b)=>(a.name||'').localeCompare(b.name||'')).map(x=>`<option value="${x.id}">${esc(x.name||'Teacher')}</option>`).join('');
+ if([...t.options].some(o=>o.value===tv))t.value=tv;
+ const names=[...new Set(db.courses.map(x=>x.name).filter(Boolean))].sort((a,b)=>a.localeCompare(b));
+ c.innerHTML='<option value="">All Courses</option>'+names.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
+ if([...c.options].some(o=>o.value===cv))c.value=cv;
+}
+function renderMonthlySummary(){
+ const session=currentSession(); if(session?.role==='teacher')return;
+ const m=document.getElementById('summaryMonth'),tf=document.getElementById('summaryTeacher'),cf=document.getElementById('summaryCourse'),list=document.getElementById('monthlySummaryList');
+ if(!m||!tf||!cf||!list)return;
+ initMonthlySummaryFilters();
+ const month=m.value||today.slice(0,7),teacherFilter=tf.value,courseFilter=cf.value;
+ const rows=db.attendance.filter(a=>String(a.date||'').slice(0,7)===month && (!teacherFilter||a.teacherId===teacherFilter) && (!courseFilter||(a.subject||a.className||'')===courseFilter));
+ const grouped={};
+ rows.forEach(a=>{const tid=a.teacherId||'unknown',sub=a.subject||a.className||'Untitled Course';grouped[tid]??={};grouped[tid][sub]=(grouped[tid][sub]||0)+1;});
+ const teacherIds=Object.keys(grouped).sort((a,b)=>teacherName(a).localeCompare(teacherName(b)));
+ const uniqueCourses=new Set(rows.map(a=>a.subject||a.className||'Untitled Course'));
+ document.getElementById('summaryTeacherCount').textContent=teacherIds.length;
+ document.getElementById('summaryCourseCount').textContent=uniqueCourses.size;
+ document.getElementById('summaryClassCount').textContent=rows.length;
+ list.innerHTML=teacherIds.length?teacherIds.map(tid=>{const courses=grouped[tid],total=Object.values(courses).reduce((a,b)=>a+b,0);return `<div class="summary-teacher"><div class="summary-teacher-head"><b>👩‍🏫 ${esc(teacherName(tid))}</b><span class="summary-total">Total ${total} class${total===1?'':'es'}</span></div>${Object.entries(courses).sort((a,b)=>a[0].localeCompare(b[0])).map(([name,count])=>`<div class="summary-course-row"><div class="course-name">${esc(name)}</div><div class="class-count">${count} 堂</div></div>`).join('')}</div>`}).join(''):`<div class="empty">No attendance records saved for this month.</div>`;
+}
+document.getElementById('summaryMonth')?.addEventListener('change',renderMonthlySummary);
+document.getElementById('summaryTeacher')?.addEventListener('change',renderMonthlySummary);
+document.getElementById('summaryCourse')?.addEventListener('change',renderMonthlySummary);
+
 let activeAttendanceSubject='',activeAttendanceTeacherId='';
 function teacherSubjects(teacher){return db.courses.filter(c=>c.teacherId===teacher?.id).map(c=>c.name)}
 function renderAttendance(){
@@ -3802,7 +3879,7 @@ deleteMakeupBtn.onclick=async()=>{
 function renderCalendar(){const session=currentSession(),y=calCursor.getFullYear(),m=calCursor.getMonth();monthTitle.textContent=calCursor.toLocaleString('en-US',{month:'long',year:'numeric'});const first=new Date(y,m,1),start=new Date(y,m,1-first.getDay());let html='';for(let i=0;i<42;i++){const d=new Date(start);d.setDate(start.getDate()+i);const ds=ymd(d),out=d.getMonth()!==m;const events=db.makeups.filter(x=>x.date===ds&&(!(session?.role==='teacher'&&session.teacherId)||x.teacherId===session.teacherId));html+=`<div class="day ${out?'out':''}" ondblclick="openMakeupModal(null,'${ds}')"><div class="num">${d.getDate()}</div>${events.map(e=>`<div class="makeup-event ${e.status==='done'?'done':''}" onclick="event.stopPropagation();openMakeupModal('${e.id}')"><strong>${esc(teacherName(e.teacherId))}</strong><span>${esc(e.time||'')} · ${esc((e.studentNames&&e.studentNames.length)?e.studentNames.join(', '):studentName(e.studentId))}</span><br><span>${esc(e.subject||'Makeup')}</span></div>`).join('')}</div>`}calendarGrid.innerHTML=html}
 prevMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()-1,1);renderCalendar()};nextMonth.onclick=()=>{calCursor=new Date(calCursor.getFullYear(),calCursor.getMonth()+1,1);renderCalendar()};goToday.onclick=()=>{calCursor=new Date();renderCalendar()};
 function renderDashboard(){const session=currentSession(),teacher=session?.role==='teacher',tid=session?.teacherId;const visibleTeachers=teacher?db.teachers.filter(t=>t.id===tid):db.teachers,visibleStudents=teacher?db.students.filter(s=>s.teacherId===tid):db.students,visibleAttendance=teacher?db.attendance.filter(a=>a.teacherId===tid):db.attendance,visibleMakeups=teacher?db.makeups.filter(m=>m.teacherId===tid):db.makeups;statTeachers.textContent=visibleTeachers.length;statStudents.textContent=uniqueAssignedStudentCount(teacher?tid:null);const a=visibleAttendance.filter(x=>x.date===today);let p=0;a.forEach(x=>Object.values(x.records||{}).forEach(v=>{if(v==='present')p++}));statPresent.textContent=p;const upcoming=visibleMakeups.filter(m=>m.date>=today&&m.status!=='cancelled').sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));statMakeups.textContent=upcoming.length;dashAttendance.innerHTML=a.length?a.map(x=>`<div class="quick-row"><div><b>${esc(teacherName(x.teacherId))}</b><div class="muted">${esc(x.className||'Attendance saved')}</div></div><span class="pill">${Object.keys(x.records||{}).length} students</span></div>`).join(''):`<div class="empty">No attendance saved for today.</div>`;dashMakeups.innerHTML=upcoming.length?upcoming.slice(0,5).map(m=>`<div class="quick-row"><div><b>${esc(studentName(m.studentId))}</b><div class="muted">${esc(m.date)} ${esc(m.time||'')} · ${esc(teacherName(m.teacherId))}</div></div><span class="pill">${esc(m.subject||'Makeup')}</span></div>`).join(''):`<div class="empty">No upcoming makeup classes.</div>`}
-function renderAll(){populateSelects();renderPeople();renderTeacherSchedule();renderAttendance();renderCalendar();renderDashboard();applyRoleUI();renderAnnouncement();}
+function renderAll(){populateSelects();renderPeople();renderTeacherSchedule();renderAttendance();renderMonthlySummary();renderCalendar();renderDashboard();applyRoleUI();renderAnnouncement();}
 renderAll();restoreSession();bootstrapBack4App();
 for(const modal of document.querySelectorAll('.modal'))modal.addEventListener('mousedown',e=>{if(e.target===modal&&modal.id!=='firstPasswordModal')modal.classList.remove('show')});
 
